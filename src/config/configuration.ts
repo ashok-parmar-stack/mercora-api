@@ -58,11 +58,6 @@ export interface AppConfig {
     forcePathStyle: boolean;
     publicUrl: string;
   };
-  neon?: {
-    restApiUrl?: string;
-    authUrl?: string;
-    jwksUrl?: string;
-  };
 }
 
 export default (): AppConfig => ({
@@ -122,10 +117,5 @@ export default (): AppConfig => ({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
     forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE !== 'false',
     publicUrl: process.env.NEXT_PUBLIC_STORAGE_URL || '/uploads',
-  },
-  neon: {
-    restApiUrl: process.env.NEON_REST_API_URL,
-    authUrl: process.env.NEON_AUTH_URL,
-    jwksUrl: process.env.NEON_JWKS_URL,
   },
 });
