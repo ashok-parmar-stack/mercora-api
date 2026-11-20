@@ -5,10 +5,7 @@ import { RolePermissionEntity } from './role-permission.entity';
 
 @Entity('roles')
 export class RoleEntity {
-  @PrimaryGeneratedColumn({
-    type: 'bigint',
-    unsigned: true,
-  })
+  @PrimaryGeneratedColumn()
   id: string;
 
   @Column({ length: 100 })

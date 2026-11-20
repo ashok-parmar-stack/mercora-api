@@ -3,10 +3,7 @@ import { CreateTimestampColumn, UpdateTimestampColumn } from '../../common/datab
 
 @Entity('statuses')
 export class StatusEntity {
-  @PrimaryGeneratedColumn({
-    type: 'bigint',
-    unsigned: true,
-  })
+  @PrimaryGeneratedColumn()
   id: string;
 
   @Column({ length: 50 })
