@@ -20,6 +20,7 @@ export interface AppConfig {
     ssl?: boolean;
   };
   elasticsearch: {
+    enabled: boolean;
     node: string;
     index: string;
     apiKey?: string;
@@ -84,7 +85,8 @@ export default (): AppConfig => ({
     ssl: process.env.DB_SSL === 'true' || Boolean(process.env.DATABASE_URL?.includes('sslmode=require')),
   },
   elasticsearch: {
-    node: process.env.ELASTICSEARCH_NODE || 'http://localhost:9200',
+    enabled: process.env.ELASTICSEARCH_ENABLED === 'true',
+    node: process.env.ELASTICSEARCH_NODE || '',
     index: process.env.ELASTICSEARCH_INDEX || 'mercora_properties',
     apiKey: process.env.ELASTICSEARCH_API_KEY || undefined,
   },

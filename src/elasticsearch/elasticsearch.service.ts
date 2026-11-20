@@ -9,6 +9,9 @@ export class ElasticsearchService implements OnModuleInit {
   private isConnected = false;
 
   constructor(private configService: ConfigService) {
+    const isEnabled =
+      this.configService.get<boolean>('elasticsearch.enabled') ??
+      process.env.ELASTICSEARCH_ENABLED === 'true';
     const node = this.configService.get<string>('elasticsearch.node');
     const isServerless = Boolean(
       process.env.VERCEL ||
@@ -16,9 +19,9 @@ export class ElasticsearchService implements OnModuleInit {
       process.env.NOW_REGION
     );
 
-    // Skip connecting if no node configured or if pointing to localhost in serverless/cloud
-    if (!node || (isServerless && (node.includes('localhost') || node.includes('127.0.0.1')))) {
-      this.logger.log('Elasticsearch client disabled (no cloud cluster configured)');
+    // Skip connecting if disabled, no node configured, or if pointing to localhost in serverless/cloud
+    if (!isEnabled || !node || (isServerless && (node.includes('localhost') || node.includes('127.0.0.1')))) {
+      this.logger.log('Elasticsearch service is disabled.');
       return;
     }
 
