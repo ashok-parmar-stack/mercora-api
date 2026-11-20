@@ -1,4 +1,4 @@
-# Mercora Cloud API
+# Mercora API
 
 Standalone NestJS REST API server for the Mercora B2B Platform.
 
