@@ -16,7 +16,7 @@ export class BusinessEntity {
     public name: string,
     public slug: string,
     public category: string,
-    public businessType: BusinessType,
+    public businessType: BusinessType | string,
     public industry: string,
     public city: string,
     public state: string,

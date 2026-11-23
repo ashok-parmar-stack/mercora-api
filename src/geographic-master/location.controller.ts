@@ -8,6 +8,18 @@ import { DistrictEntity } from './districts/entities/district.entity';
 import { SubDistrictEntity } from './sub-districts/entities/sub-district.entity';
 import { LocationSyncService } from './location-sync.service';
 
+export interface LocationCityDto {
+  id: string;
+  name: string;
+  slug: string;
+  code?: string;
+  state: string;
+  stateName: string;
+  stateId?: string;
+  locationType: string;
+  businessCount: number;
+}
+
 @ApiTags('Locations / Dropdowns & Cascades')
 @Controller('locations')
 export class LocationController {
@@ -177,6 +189,174 @@ export class LocationController {
         lgdCode: sd.lgdCode,
         districtId: sd.districtId,
       })),
+    };
+  }
+
+  /**
+   * 5. Cities / Commercial & Industrial Clusters
+   * GET /locations/cities?state_id={stateId}&search={search}
+   */
+  @Get('cities')
+  @ApiOperation({ summary: 'Get active cities and industrial clusters' })
+  @ApiQuery({ name: 'state_id', required: false, description: 'State UUID filter' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search term' })
+  async getCities(
+    @Query('state_id') stateId?: string,
+    @Query('search') search?: string,
+  ) {
+    const BASELINE_HUBS = [
+      { name: 'Ahmedabad', code: 'AMD', state: 'Gujarat', locationType: 'Industrial Machinery & Engineering Hub' },
+      { name: 'Surat', code: 'ST', state: 'Gujarat', locationType: 'Textiles, Diamonds & Apparel Hub' },
+      { name: 'Vadodara', code: 'BRC', state: 'Gujarat', locationType: 'Pharmaceuticals, Chemicals & Power Hub' },
+      { name: 'Morbi', code: 'MRB', state: 'Gujarat', locationType: 'Ceramics, Tiles & Sanitaryware Capital' },
+      { name: 'Rajkot', code: 'RJT', state: 'Gujarat', locationType: 'Auto Components, Casting & Forging Hub' },
+      { name: 'Gandhinagar', code: 'GND', state: 'Gujarat', locationType: 'Electronics, IT & Finance Hub' },
+      { name: 'Bharuch', code: 'BH', state: 'Gujarat', locationType: 'Chemicals, Petrochemicals & Dyes' },
+      { name: 'Ankleshwar', code: 'ANK', state: 'Gujarat', locationType: 'Chemical & Bulk Drug Industrial Estate' },
+      { name: 'Vapi', code: 'VP', state: 'Gujarat', locationType: 'Chemical, Paper & Plastics Hub' },
+      { name: 'Jamnagar', code: 'JAM', state: 'Gujarat', locationType: 'Brass Components & Refining' },
+      { name: 'Bhavnagar', code: 'BHV', state: 'Gujarat', locationType: 'Ship Recycling & Plastic Machinery' },
+      { name: 'Pune', code: 'PN', state: 'Maharashtra', locationType: 'Automobile & Heavy Engineering Corridor' },
+      { name: 'Mumbai', code: 'BOM', state: 'Maharashtra', locationType: 'Commercial & Financial Headquarters' },
+      { name: 'Bengaluru', code: 'BLR', state: 'Karnataka', locationType: 'Aerospace, Technology & Precision Engineering' },
+      { name: 'Chennai', code: 'MAA', state: 'Tamil Nadu', locationType: 'Automotive & Hardware Manufacturing' },
+      { name: 'Coimbatore', code: 'CJB', state: 'Tamil Nadu', locationType: 'Textile Machinery & Pumps Manufacturing' },
+      { name: 'Ludhiana', code: 'LDH', state: 'Punjab', locationType: 'Bicycle, Machine Tools & Hosiery' },
+      { name: 'Indore', code: 'IDR', state: 'Madhya Pradesh', locationType: 'Pharma & Food Processing Corridor' },
+      { name: 'Jaipur', code: 'JAI', state: 'Rajasthan', locationType: 'Handicrafts, Gems & Minerals' },
+      { name: 'Hyderabad', code: 'HYD', state: 'Telangana', locationType: 'Pharmaceuticals & Biotechnology' },
+    ];
+
+    const cityMap = new Map<string, LocationCityDto>();
+
+    // A. Seed curated baseline hubs
+    for (const hub of BASELINE_HUBS) {
+      const key = hub.name.trim().toLowerCase();
+      cityMap.set(key, {
+        id: key,
+        name: hub.name,
+        slug: hub.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        code: hub.code,
+        state: hub.state,
+        stateName: hub.state,
+        locationType: hub.locationType,
+        businessCount: 0,
+      });
+    }
+
+    // B. Query distinct business operating locations from directory_businesses
+    try {
+      const rows = await this.districtRepo.query(
+        `SELECT city, state, COUNT(*)::int as count 
+         FROM directory_businesses 
+         WHERE city IS NOT NULL AND TRIM(city) != '' 
+         GROUP BY city, state 
+         ORDER BY count DESC`
+      );
+      if (Array.isArray(rows)) {
+        for (const r of rows) {
+          const rawCity = String(r.city || '').trim();
+          if (!rawCity) continue;
+          const key = rawCity.toLowerCase();
+          const rawState = String(r.state || 'Gujarat').trim();
+          const count = Number(r.count) || 0;
+
+          const existing = cityMap.get(key);
+          if (existing) {
+            existing.businessCount = count;
+            if (rawState) {
+              existing.state = rawState;
+              existing.stateName = rawState;
+            }
+          } else {
+            cityMap.set(key, {
+              id: key,
+              name: rawCity,
+              slug: rawCity.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              code: rawCity.slice(0, 3).toUpperCase(),
+              state: rawState,
+              stateName: rawState,
+              locationType: 'Industrial Business Cluster',
+              businessCount: count,
+            });
+          }
+        }
+      }
+    } catch {
+      // directory_businesses table query fallback
+    }
+
+    // C. Query districts from districtRepo if present in database
+    try {
+      const qb = this.districtRepo.createQueryBuilder('district')
+        .leftJoinAndSelect('district.state', 'state')
+        .where('district.isActive = :isActive', { isActive: true });
+
+      if (stateId) {
+        qb.andWhere('district.stateId = :stateId', { stateId });
+      }
+
+      const districts = await qb.getMany();
+      for (const d of districts) {
+        const key = d.name.trim().toLowerCase();
+        const existing = cityMap.get(key);
+        if (existing) {
+          existing.id = d.id;
+          existing.code = d.code || existing.code;
+          existing.stateId = d.stateId;
+          if (d.state?.name) {
+            existing.state = d.state.name;
+            existing.stateName = d.state.name;
+          }
+        } else {
+          cityMap.set(key, {
+            id: d.id,
+            name: d.name,
+            slug: d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            code: d.code,
+            state: d.state?.name || 'Gujarat',
+            stateName: d.state?.name || 'Gujarat',
+            stateId: d.stateId,
+            locationType: 'Commercial District',
+            businessCount: 0,
+          });
+        }
+      }
+    } catch {
+      // District query fallback
+    }
+
+    let list = Array.from(cityMap.values());
+
+    // Apply stateId filter
+    if (stateId) {
+      list = list.filter((c) => c.stateId === stateId);
+    }
+
+    // Apply search filter
+    if (search && search.trim().length > 0) {
+      const term = search.trim().toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(term) ||
+          c.state.toLowerCase().includes(term) ||
+          (c.code && c.code.toLowerCase().includes(term)),
+      );
+    }
+
+    // Sort: cities with registered businesses first, then alphabetical
+    list.sort((a, b) => {
+      if (b.businessCount !== a.businessCount) {
+        return b.businessCount - a.businessCount;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return {
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Cities fetched successfully',
+      data: list,
     };
   }
 

@@ -11,8 +11,8 @@ export class UpdateBusinessDto {
   category?: string;
 
   @IsOptional()
-  @IsEnum(BusinessType)
-  businessType?: BusinessType;
+  @IsString()
+  businessType?: string;
 
   @IsOptional()
   @IsString()

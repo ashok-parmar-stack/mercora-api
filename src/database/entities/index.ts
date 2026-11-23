@@ -24,3 +24,6 @@ export * from '../../geographic-master/sub-districts/entities/sub-district.entit
 export * from '../../catalog-master/hsn-codes/entities/hsn-code.entity';
 export * from '../../catalog-master/product-categories/entities/product-category.entity';
 export * from '../../catalog-master/mappings/entities/hsn-code-category.entity';
+export * from '../../modules/businesses/infrastructure/persistence/entities/business-orm.entity';
+export * from '../../modules/categories/infrastructure/persistence/entities/category.orm-entity';
+export * from '../../modules/business-categories/infrastructure/persistence/entities/business-category.orm-entity';

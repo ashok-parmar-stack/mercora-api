@@ -12,12 +12,18 @@ import { CategoryStatus } from "../../../domain/enums/category-status.enum";
 import { runInTransaction } from "../../../../../common/utils/transaction-runner.util";
 
 const INITIAL_CATEGORIES = [
-  { id: "cat-1", name: "Industrial Machinery", slug: "industrial-machinery", description: "Heavy machinery, CNC equipment, and tooling", displayOrder: 1, productCount: 420, businessCount: 150 },
-  { id: "cat-2", name: "Textiles & Fabrics", slug: "textiles-fabrics", description: "Yarn, commercial textiles, and synthetic fabrics", displayOrder: 2, productCount: 310, businessCount: 95 },
-  { id: "cat-3", name: "Pharmaceuticals", slug: "pharmaceuticals", description: "Active pharmaceutical ingredients and formulations", displayOrder: 3, productCount: 280, businessCount: 110 },
-  { id: "cat-4", name: "Ceramics & Tiles", slug: "ceramics-tiles", description: "Vitrified tiles, sanitaryware, and ceramic raw materials", displayOrder: 4, productCount: 540, businessCount: 230 },
-  { id: "cat-5", name: "Chemicals & Plastics", slug: "chemicals-plastics", description: "Industrial solvents, resins, and polymers", displayOrder: 5, productCount: 195, businessCount: 75 },
-  { id: "cat-6", name: "Packaging & Printing", slug: "packaging-printing", description: "Corrugated boxes, film wrapping, and labels", displayOrder: 6, productCount: 160, businessCount: 60 },
+  { id: "cat-1", name: "Industrial Machinery", slug: "industrial-machinery", description: "Heavy machinery, CNC equipment, industrial tooling and automation", displayOrder: 1, iconUrl: "Factory", productCount: 420, businessCount: 150 },
+  { id: "cat-2", name: "Textiles & Fabrics", slug: "textiles-fabrics", description: "Yarn, commercial textiles, apparel fabric and synthetic weaves", displayOrder: 2, iconUrl: "Layers", productCount: 310, businessCount: 95 },
+  { id: "cat-3", name: "Pharmaceuticals", slug: "pharmaceuticals", description: "Active pharmaceutical ingredients, generic formulations and dosage forms", displayOrder: 3, iconUrl: "Activity", productCount: 280, businessCount: 110 },
+  { id: "cat-4", name: "Ceramics & Tiles", slug: "ceramics-tiles", description: "Vitrified tiles, sanitaryware, porcelain slabs and ceramic raw materials", displayOrder: 4, iconUrl: "Grid", productCount: 540, businessCount: 230 },
+  { id: "cat-5", name: "Chemicals & Plastics", slug: "chemicals-plastics", description: "Industrial solvents, resins, polymers and specialty compounds", displayOrder: 5, iconUrl: "FlaskConical", productCount: 195, businessCount: 75 },
+  { id: "cat-6", name: "Packaging & Printing", slug: "packaging-printing", description: "Corrugated boxes, protective film wrapping, barcode labels and cartons", displayOrder: 6, iconUrl: "Package", productCount: 160, businessCount: 60 },
+  { id: "cat-7", name: "Electrical & Electronics", slug: "electrical-electronics", description: "Power transmission equipment, semiconductors, panels and industrial cables", displayOrder: 7, iconUrl: "Zap", productCount: 340, businessCount: 115 },
+  { id: "cat-8", name: "Construction & Real Estate", slug: "construction-real-estate", description: "Structural steel, cement, architectural hardware and civil materials", displayOrder: 8, iconUrl: "Building", productCount: 410, businessCount: 140 },
+  { id: "cat-9", name: "Agriculture & Food", slug: "agriculture-food", description: "Agricultural produce, spices, grains, seeds and processed foods", displayOrder: 9, iconUrl: "Sprout", productCount: 290, businessCount: 105 },
+  { id: "cat-10", name: "Metals & Minerals", slug: "metals-minerals", description: "Alloy ingots, mineral ores, sheet metals and metallurgical castings", displayOrder: 10, iconUrl: "Component", productCount: 225, businessCount: 85 },
+  { id: "cat-11", name: "Automotive & Auto Parts", slug: "automotive-parts", description: "OEM vehicle spares, forged automotive components and accessories", displayOrder: 11, iconUrl: "Truck", productCount: 360, businessCount: 120 },
+  { id: "cat-12", name: "Renewable & Solar Energy", slug: "renewable-solar-energy", description: "Photovoltaic solar panels, inverters, wind turbine components and cells", displayOrder: 12, iconUrl: "SunMedium", productCount: 180, businessCount: 65 },
 ];
 
 @Injectable()

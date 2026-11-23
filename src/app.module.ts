@@ -15,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { BusinessCategoriesModule } from './modules/business-categories/business-categories.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
     // ── B2B Businesses & Categories Clean Architecture Domain ─────────────
     BusinessesModule,
     CategoriesModule,
+    BusinessCategoriesModule,
     // ── RBAC Modules ────────────────────────────────────────────────────────
     StatusesModule,
     RolesModule,

@@ -56,7 +56,11 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
     }
 
     if (options.category && options.category !== "all" && options.category !== "All Categories") {
-      queryBuilder.andWhere("LOWER(b.category) = LOWER(:cat)", { cat: options.category });
+      const catLower = options.category.toLowerCase().trim().replace(/-/g, " ");
+      queryBuilder.andWhere(
+        "(LOWER(b.category) = :catExact OR LOWER(b.category) LIKE :catPattern)",
+        { catExact: options.category.toLowerCase().trim(), catPattern: `%${catLower}%` }
+      );
     }
 
     if (options.state && options.state !== "all") {
@@ -68,7 +72,11 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
     }
 
     if (options.businessType && options.businessType !== "all") {
-      queryBuilder.andWhere("LOWER(b.business_type) = LOWER(:bt)", { bt: options.businessType });
+      const btLower = options.businessType.toLowerCase().trim();
+      queryBuilder.andWhere(
+        "(LOWER(b.business_type) = :btExact OR LOWER(b.business_type) LIKE :btPattern)",
+        { btExact: btLower, btPattern: `%${btLower}%` }
+      );
     }
 
     if (options.verifiedOnly) {

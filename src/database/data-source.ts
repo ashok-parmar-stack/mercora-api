@@ -28,6 +28,9 @@ import {
   EmailVerificationEntity,
   PasswordResetEntity,
 } from './entities';
+import { BusinessOrmEntity } from '../modules/businesses/infrastructure/persistence/entities/business-orm.entity';
+import { CategoryOrmEntity } from '../modules/categories/infrastructure/persistence/entities/category.orm-entity';
+import { BusinessCategoryOrmEntity } from '../modules/business-categories/infrastructure/persistence/entities/business-category.orm-entity';
 
 // Helper to manually load environment file
 function loadEnvFile(envFilePath: string) {
@@ -61,6 +64,9 @@ if (fs.existsSync(envFile)) {
 }
 
 export const allEntities = [
+  BusinessOrmEntity,
+  CategoryOrmEntity,
+  BusinessCategoryOrmEntity,
   StatusEntity,
   RoleEntity,
   PermissionEntity,

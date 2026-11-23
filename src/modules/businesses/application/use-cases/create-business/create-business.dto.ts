@@ -15,8 +15,8 @@ export class CreateBusinessDto {
   category: string;
 
   @IsNotEmpty()
-  @IsEnum(BusinessType)
-  businessType: BusinessType;
+  @IsString()
+  businessType: string;
 
   @IsNotEmpty()
   @IsString()

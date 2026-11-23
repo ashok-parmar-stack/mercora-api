@@ -29,11 +29,13 @@ import {
 } from './entities';
 import { BusinessOrmEntity } from '../modules/businesses/infrastructure/persistence/entities/business-orm.entity';
 import { CategoryOrmEntity } from '../modules/categories/infrastructure/persistence/entities/category.orm-entity';
+import { BusinessCategoryOrmEntity } from '../modules/business-categories/infrastructure/persistence/entities/business-category.orm-entity';
 import { PermissionResolverService } from './permission-resolver.service';
 
 const allEntities = [
   BusinessOrmEntity,
   CategoryOrmEntity,
+  BusinessCategoryOrmEntity,
   StatusEntity,
   RoleEntity,
   PermissionEntity,

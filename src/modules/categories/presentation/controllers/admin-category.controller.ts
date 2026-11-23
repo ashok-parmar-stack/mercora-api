@@ -35,3 +35,8 @@ export class AdminCategoryController {
     await this.deleteCategoryUseCase.execute(id);
   }
 }
+
+@ApiTags("Master Categories (Admin)")
+@Controller("admin/master-categories")
+export class AdminMasterCategoryAliasController extends AdminCategoryController {}
+

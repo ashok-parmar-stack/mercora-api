@@ -14,7 +14,7 @@ export class PublicCategoryController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: "List active product categories and counts" })
+  @ApiOperation({ summary: "List active product/master categories and counts" })
   async list(@Query() query: CategoryQueryDto) {
     return this.listCategoriesUseCase.execute(query);
   }
@@ -25,3 +25,8 @@ export class PublicCategoryController {
     return this.getCategoryUseCase.execute(slug);
   }
 }
+
+@ApiTags("Master Categories")
+@Controller("master-categories")
+export class PublicMasterCategoryAliasController extends PublicCategoryController {}
+
