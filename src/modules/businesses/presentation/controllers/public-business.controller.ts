@@ -1,13 +1,14 @@
-import { Controller, Get, Param, Query, Post, Body, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Get, Param, Query, Post, Body, HttpCode, HttpStatus, Inject } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { ListBusinessesUseCase } from "../../application/use-cases/list-businesses/list-businesses.use-case";
 import { GetBusinessUseCase } from "../../application/use-cases/get-business/get-business.use-case";
+import { CreateBusinessUseCase } from "../../application/use-cases/create-business/create-business.use-case";
+import { CreateBusinessDto } from "../../application/use-cases/create-business/create-business.dto";
 import { BusinessQueryDto } from "../../application/dto/business-query.dto";
 import { BusinessResponseDto } from "../../application/dto/business-response.dto";
 import { API_HEADERS } from "../../../../config/headers.config";
 import { API_MESSAGES } from "../../../../config/messages.config";
 import { IBusinessRepository, BUSINESS_REPOSITORY_TOKEN } from "../../domain/repositories/business.repository.interface";
-import { Inject } from "@nestjs/common";
 
 @ApiTags(API_HEADERS.modules.businesses.tag)
 @Controller("businesses")
@@ -15,9 +16,18 @@ export class PublicBusinessController {
   constructor(
     private readonly listBusinessesUseCase: ListBusinessesUseCase,
     private readonly getBusinessUseCase: GetBusinessUseCase,
+    private readonly createBusinessUseCase: CreateBusinessUseCase,
     @Inject(BUSINESS_REPOSITORY_TOKEN)
     private readonly businessRepository: IBusinessRepository
   ) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Add / register a new verified business" })
+  @ApiResponse({ status: 201, description: "Business created successfully" })
+  async create(@Body() dto: CreateBusinessDto) {
+    return this.createBusinessUseCase.execute(dto);
+  }
 
   @Get()
   @ApiOperation({ summary: "List verified B2B businesses with filters, pagination, and sorting" })

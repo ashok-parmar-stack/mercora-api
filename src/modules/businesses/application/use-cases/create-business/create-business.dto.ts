@@ -1,7 +1,10 @@
-import { IsNotEmpty, IsString, IsOptional, IsEnum, IsNumber } from "class-validator";
-import { BusinessType } from "../../../domain/enums/business-type.enum";
+import { IsNotEmpty, IsString, IsOptional, IsNumber, IsArray } from "class-validator";
 
 export class CreateBusinessDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @IsNotEmpty()
   @IsString()
   name: string;
@@ -10,13 +13,37 @@ export class CreateBusinessDto {
   @IsString()
   slug?: string;
 
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  logo_url?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  image_url?: string;
+
   @IsNotEmpty()
   @IsString()
   category: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  businessType: string;
+  businessType?: string;
+
+  @IsOptional()
+  @IsString()
+  business_type?: string;
+
+  @IsOptional()
+  @IsString()
+  industry?: string;
 
   @IsNotEmpty()
   @IsString()
@@ -28,11 +55,59 @@ export class CreateBusinessDto {
 
   @IsOptional()
   @IsString()
+  pincode?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  fullOverview?: string;
+
+  @IsOptional()
+  @IsString()
+  full_overview?: string;
+
+  @IsOptional()
+  @IsNumber()
+  rating?: number;
+
+  @IsOptional()
+  @IsNumber()
+  reviewCount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  review_count?: number;
 
   @IsOptional()
   @IsNumber()
   establishedYear?: number;
+
+  @IsOptional()
+  @IsNumber()
+  established_year?: number;
+
+  @IsOptional()
+  @IsString()
+  employeeCount?: string;
+
+  @IsOptional()
+  @IsString()
+  employee_count?: string;
+
+  @IsOptional()
+  @IsString()
+  verificationStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  verification_status?: string;
+
+  @IsOptional()
+  @IsString()
+  tier?: string;
 
   @IsOptional()
   @IsString()
@@ -53,4 +128,18 @@ export class CreateBusinessDto {
   @IsOptional()
   @IsString()
   gstin?: string;
+
+  @IsOptional()
+  @IsString()
+  cin?: string;
+
+  @IsOptional()
+  @IsArray()
+  products?: Array<{
+    id: string;
+    name: string;
+    category: string;
+    imageUrl: string;
+    description?: string;
+  }>;
 }
