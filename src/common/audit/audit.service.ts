@@ -23,6 +23,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLogEntity } from '../../database/entities';
+import { isUUID } from '../constants';
 import { MercoraLogger } from '../logger';
 import { MSG } from '../messages';
 
@@ -62,9 +63,7 @@ export class AuditService {
    */
   async log(input: AuditLogInput): Promise<void> {
     try {
-      const isUuid =
-        input.userId &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.userId);
+      const isUuid = isUUID(input.userId);
 
       const entry = this.auditRepo.create({
         userId: isUuid ? input.userId : null,

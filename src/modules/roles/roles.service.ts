@@ -34,8 +34,8 @@ export class RolesService {
 
   /* ── Find Operations (debug in find-role.service.ts) ─────────────────────── */
 
-  findAll() {
-    return this.findService.findAll();
+  findAll(query?: import('./dto/role-query.dto').RoleQueryDto) {
+    return this.findService.findAll(query);
   }
 
   findOne(idOrCode: string) {

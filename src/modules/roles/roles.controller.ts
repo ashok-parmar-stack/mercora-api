@@ -26,6 +26,7 @@ import {
   UpdateRolePermissionMatrixDto,
   AddRolePermissionsDto,
   RemoveRolePermissionsDto,
+  RoleQueryDto,
 } from './dto';
 
 @ApiTags('Roles')
@@ -38,11 +39,11 @@ export class RolesController {
   @Get()
   @ApiOperation({
     summary: 'List all roles',
-    description: 'Retrieves all roles in the system ordered by system roles first, then alphabetically.',
+    description: 'Retrieves all roles supporting search, status filter, sorting, and pagination.',
   })
-  @ApiResponse({ status: 200, description: 'List of roles' })
-  findAll() {
-    return this.rolesService.findAll();
+  @ApiResponse({ status: 200, description: 'List of roles or paginated role result' })
+  findAll(@Query() query: RoleQueryDto) {
+    return this.rolesService.findAll(query);
   }
 
   @Get(':idOrCode')
