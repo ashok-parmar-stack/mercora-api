@@ -44,6 +44,7 @@ export class BusinessOrmEntity {
   @Index()
   state: string;
 
+  @Index()
   @Column('varchar', { length: 20 })
   pincode: string;
 

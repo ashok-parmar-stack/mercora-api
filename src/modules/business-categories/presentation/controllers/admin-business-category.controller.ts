@@ -8,6 +8,8 @@ import {
   Body,
   Param,
   Query,
+  Inject,
+  BadRequestException,
   HttpCode,
   HttpStatus,
 } from "@nestjs/common";
@@ -21,8 +23,14 @@ import { DeleteBusinessCategoryUseCase } from "../../application/use-cases/delet
 import { CreateBusinessCategoryDto } from "../../application/dto/create-business-category.dto";
 import { UpdateBusinessCategoryDto } from "../../application/dto/update-business-category.dto";
 import { BusinessCategoryQueryDto } from "../../application/dto/business-category-query.dto";
+import {
+  IBusinessCategoryRepository,
+  BUSINESS_CATEGORY_REPOSITORY_TOKEN,
+} from "../../domain/repositories/business-category.repository.interface";
+import { Roles, CATALOG_ADMIN_ROLES } from "../../../../common";
 
 @ApiTags("Business Categories / Types Master (Admin)")
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller("admin/business-categories")
 export class AdminBusinessCategoryController {
   constructor(
@@ -31,7 +39,9 @@ export class AdminBusinessCategoryController {
     private readonly treeUseCase: GetBusinessCategoryTreeUseCase,
     private readonly createUseCase: CreateBusinessCategoryUseCase,
     private readonly updateUseCase: UpdateBusinessCategoryUseCase,
-    private readonly deleteUseCase: DeleteBusinessCategoryUseCase
+    private readonly deleteUseCase: DeleteBusinessCategoryUseCase,
+    @Inject(BUSINESS_CATEGORY_REPOSITORY_TOKEN)
+    private readonly categoryRepo: IBusinessCategoryRepository,
   ) {}
 
   @Get()
@@ -74,18 +84,18 @@ export class AdminBusinessCategoryController {
   }
 
   @Patch("order")
-  @ApiOperation({ summary: "Bulk update category display orders" })
+  @ApiOperation({ summary: "Bulk update category display orders inside a single transaction" })
   async updateOrder(
     @Body() items: Array<{ id: string; displayOrder: number }>
   ) {
-    const results = [];
-    for (const item of items) {
-      const updated = await this.updateUseCase.execute(item.id, {
-        displayOrder: item.displayOrder,
-      });
-      results.push(updated);
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException("Order items array is required.");
     }
-    return results;
+    await this.categoryRepo.bulkUpdateOrder(items);
+    return {
+      success: true,
+      updatedCount: items.length,
+    };
   }
 
   @Delete(":id")

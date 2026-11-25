@@ -6,6 +6,11 @@ import {
 import type { Express } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {
+  requestIdMiddleware,
+  securityHeadersMiddleware,
+  rateLimitMiddleware,
+} from '../common/middleware';
 
 /**
  * Shared HTTP configuration applied to both standalone NestJS server (`main.ts`)
@@ -19,11 +24,16 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
  *  - Swagger OpenAPI Documentation setup
  */
 export function configureApp(app: INestApplication): void {
-  // 1. Security: Disable Express x-powered-by header
+  // 1. Security: Disable Express x-powered-by, attach security headers & rate limiting
   try {
     const expressApp = app.getHttpAdapter().getInstance() as Express;
     if (expressApp && typeof expressApp.disable === 'function') {
       expressApp.disable('x-powered-by');
+    }
+    if (expressApp && typeof expressApp.use === 'function') {
+      expressApp.use(requestIdMiddleware);
+      expressApp.use(securityHeadersMiddleware);
+      expressApp.use(rateLimitMiddleware);
     }
   } catch {
     // Non-express adapter fallback
@@ -73,13 +83,33 @@ export function configureApp(app: INestApplication): void {
   // 3. Global route prefix
   app.setGlobalPrefix('api');
 
-  // 4. CORS configuration
-  const configuredCors = configService.get<string>('corsOrigin');
+  // 4. CORS configuration: explicit origin allowlist (never wildcard + credentials in production)
+  const configuredCors = (configService.get<string>('corsOrigin') || '').trim();
+  const isProd = configService.get<string>('nodeEnv') === 'production';
+  const explicitOrigins = configuredCors
+    .split(',')
+    .map((s: string) => s.trim())
+    .filter((s: string) => Boolean(s) && s !== '*');
+
+  const devDefaultOrigins = [
+    'http://localhost:9000',
+    'http://127.0.0.1:9000',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ];
+
+  const allowedOrigins =
+    explicitOrigins.length > 0 ? explicitOrigins : isProd ? [] : devDefaultOrigins;
+
   app.enableCors({
-    origin:
-      configuredCors && configuredCors !== '*'
-        ? configuredCors.split(',').map((s: string) => s.trim())
-        : true,
+    origin: (origin, callback) => {
+      // Allow same-origin / server-to-server requests with no Origin header
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} is not allowed by CORS policy`), false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     maxAge: 86400,

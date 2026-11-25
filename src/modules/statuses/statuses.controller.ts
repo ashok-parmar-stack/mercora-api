@@ -1,8 +1,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { StatusesService } from './statuses.service';
+import { Roles, STAFF_ROLES } from '../../common';
 
 @ApiTags('Statuses')
+@Roles(...STAFF_ROLES)
 @Controller('statuses')
 export class StatusesController {
   constructor(private readonly statusesService: StatusesService) {}

@@ -8,8 +8,10 @@ import { CreateBusinessDto } from "../../application/use-cases/create-business/c
 import { ChangeBusinessStatusDto } from "../../application/use-cases/change-business-status/change-business-status.dto";
 import { BusinessQueryDto } from "../../application/dto/business-query.dto";
 import { API_HEADERS } from "../../../../config/headers.config";
+import { Roles, CATALOG_ADMIN_ROLES } from "../../../../common";
 
 @ApiTags(API_HEADERS.modules.businesses.tag)
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller("admin/businesses")
 export class AdminBusinessController {
   constructor(

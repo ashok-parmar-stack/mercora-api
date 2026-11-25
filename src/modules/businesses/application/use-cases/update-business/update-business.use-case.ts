@@ -5,7 +5,7 @@ import {
 } from "../../../domain/repositories/business.repository.interface";
 import { UpdateBusinessDto } from "./update-business.dto";
 import { BusinessResponseDto } from "../../dto/business-response.dto";
-import { API_MESSAGES } from "../../../../../config/messages.config";
+import { API_MESSAGES } from "../../../../../common/messages";
 
 @Injectable()
 export class UpdateBusinessUseCase {

@@ -1,8 +1,10 @@
 import { Controller, Post, Get, Query, HttpStatus, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { GeographicSyncService } from '../services/geographic-sync.service';
+import { Roles, ROLES, CATALOG_ADMIN_ROLES } from '../../../common';
 
 @ApiTags('Admin / Geographic Master / Government Sync')
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller('v1/admin/geography')
 export class GeographicSyncController {
   constructor(private readonly syncService: GeographicSyncService) {}
@@ -79,6 +81,7 @@ export class GeographicSyncController {
   }
 
   @Post('reset-and-sync')
+  @Roles(ROLES.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Clear all geographic tables, restart identity counters, and re-sync fresh from LGD API' })
   @ApiResponse({ status: 200, description: 'All location master tables cleared and re-synced successfully' })

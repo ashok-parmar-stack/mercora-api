@@ -21,6 +21,7 @@ export interface IBusinessCategoryRepository {
   hasChildren(id: string): Promise<boolean>;
   hasAssignedBusinesses(id: string): Promise<boolean>;
   save(entity: BusinessCategoryEntity): Promise<BusinessCategoryEntity>;
+  bulkUpdateOrder(items: Array<{ id: string; displayOrder: number }>): Promise<void>;
   delete(id: string): Promise<void>;
   count(): Promise<number>;
 }

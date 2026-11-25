@@ -6,8 +6,10 @@ import { DeleteCategoryUseCase } from "../../application/use-cases/delete-catego
 import { CreateCategoryRequestDto } from "../dto/create-category.request.dto";
 import { UpdateCategoryRequestDto } from "../dto/update-category.request.dto";
 import { API_HEADERS } from "../../../../config/headers.config";
+import { Roles, CATALOG_ADMIN_ROLES } from "../../../../common";
 
 @ApiTags(API_HEADERS.modules.categories.tag)
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller("admin/categories")
 export class AdminCategoryController {
   constructor(
@@ -37,6 +39,7 @@ export class AdminCategoryController {
 }
 
 @ApiTags("Master Categories (Admin)")
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller("admin/master-categories")
 export class AdminMasterCategoryAliasController extends AdminCategoryController {}
 

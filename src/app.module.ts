@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { ElasticsearchModule } from './elasticsearch/elasticsearch.module';
@@ -12,6 +15,8 @@ import { GeographicMasterModule } from './geographic-master/geographic-master.mo
 import { CatalogMasterModule } from './catalog-master/catalog-master.module';
 import { EmailModule } from './modules/email/email.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard, PermissionsGuard } from './common/guards';
 import { StorageModule } from './modules/storage/storage.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -46,6 +51,28 @@ import { BusinessCategoriesModule } from './modules/business-categories/business
     AuthModule,
     // ── S3-Compatible Object Storage (Neon / AWS S3 / MinIO / R2) ─────────────
     StorageModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpLoggingInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
   ],
 })
 export class AppModule {}

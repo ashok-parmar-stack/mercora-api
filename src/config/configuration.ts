@@ -1,4 +1,25 @@
+import * as crypto from 'crypto';
 import { EXTERNAL_APIS, ExternalApisConfig } from './external-apis.config';
+
+const ephemeralDevSecrets = new Map<string, string>();
+
+function resolveJwtSecret(envKey: 'JWT_ACCESS_SECRET' | 'JWT_REFRESH_SECRET'): string {
+  const configured = process.env[envKey]?.trim();
+  if (configured && configured.length >= 16) {
+    return configured;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      `[Security Config] Missing or weak ${envKey} in production environment (minimum 16 characters required).`,
+    );
+  }
+
+  if (!ephemeralDevSecrets.has(envKey)) {
+    ephemeralDevSecrets.set(envKey, crypto.randomBytes(32).toString('hex'));
+  }
+  return ephemeralDevSecrets.get(envKey)!;
+}
 
 export interface AppConfig {
   port: number;
@@ -18,6 +39,8 @@ export interface AppConfig {
     database: string;
     sqlitePath: string;
     ssl?: boolean;
+    synchronize: boolean;
+    logging: boolean;
   };
   elasticsearch: {
     enabled: boolean;
@@ -61,12 +84,12 @@ export interface AppConfig {
 }
 
 export default (): AppConfig => ({
-  port: parseInt(process.env.PORT || '6000', 10),
+  port: parseInt(process.env.PORT || '5001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   appName: process.env.APP_NAME || 'Mercora B2B Platform API',
   appDescription: process.env.APP_DESCRIPTION || 'NestJS + TypeORM + Elasticsearch B2B Platform Engine',
   appVersion: process.env.APP_VERSION || '1.0.0',
-  corsOrigin: process.env.CORS_ORIGIN || '*',
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:9000,http://127.0.0.1:9000',
   externalApis: EXTERNAL_APIS,
   database: {
     type: (process.env.DB_TYPE as 'sqlite' | 'postgres') || 'postgres',
@@ -74,24 +97,28 @@ export default (): AppConfig => ({
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
     username: process.env.DB_USER || process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : 'postgres',
+    password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '',
     database: process.env.DB_NAME || process.env.DB_DATABASE || 'mercora_db',
     sqlitePath: process.env.SQLITE_PATH || './mercora.sqlite',
     ssl: process.env.DB_SSL === 'true' || Boolean(process.env.DATABASE_URL?.includes('sslmode=require')),
+    synchronize: process.env.DB_SYNCHRONIZE === 'true',
+    logging: process.env.DB_LOGGING === 'true',
   },
   elasticsearch: {
     enabled: process.env.ELASTICSEARCH_ENABLED === 'true',
     node: process.env.ELASTICSEARCH_NODE || '',
-    index: process.env.ELASTICSEARCH_INDEX || 'mercora_properties',
+    index: process.env.ELASTICSEARCH_INDEX || 'mercora_businesses',
     apiKey: process.env.ELASTICSEARCH_API_KEY || undefined,
   },
   swagger: {
-    enabled: process.env.SWAGGER_ENABLED !== 'false',
+    enabled:
+      process.env.SWAGGER_ENABLED === 'true' ||
+      (process.env.SWAGGER_ENABLED !== 'false' && process.env.NODE_ENV !== 'production'),
     path: process.env.SWAGGER_PATH || 'api/docs',
   },
   auth: {
-    jwtAccessSecret: process.env.JWT_ACCESS_SECRET || 'mercora-jwt-access-secret-key-super-secure-production-2026',
-    jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'mercora-jwt-refresh-secret-key-super-secure-production-2026',
+    jwtAccessSecret: resolveJwtSecret('JWT_ACCESS_SECRET'),
+    jwtRefreshSecret: resolveJwtSecret('JWT_REFRESH_SECRET'),
     accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m',
     refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d',
     sessionInactivityHours: parseInt(process.env.SESSION_INACTIVITY_HOURS || '168', 10), // 7 days default

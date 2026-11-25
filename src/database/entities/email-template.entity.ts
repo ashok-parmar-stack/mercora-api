@@ -26,6 +26,7 @@ export class EmailTemplateEntity {
   @Column({ type: 'simple-json', nullable: true })
   variables: string[]; // e.g. ['{{user_name}}', '{{app_name}}', '{{login_url}}', '{{support_email}}']
 
+  @Index()
   @Column({ name: 'status_id', type: 'bigint', nullable: true })
   statusId: string;
 

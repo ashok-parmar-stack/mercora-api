@@ -18,6 +18,7 @@ export class CompanyEntity {
   @Column({ length: 255, nullable: true })
   website: string;
 
+  @Index()
   @Column({ name: 'status_id', type: 'bigint', nullable: true })
   statusId: string;
 

@@ -21,6 +21,7 @@ import {
   toSlug,
   toCode,
 } from '../../../common';
+import { saveInChunksTransactional } from '../../../common/utils/bulk-upsert.util';
 
 const generateSlug = toSlug;
 const generateCode = toCode;
@@ -374,9 +375,6 @@ export class ProductCategoriesService {
     category.level = newLevel;
     category.path = newBasePath;
 
-    await this.categoryRepo.save(category);
-
-    // Recursively update all descendants
     const descendants = await this.categoryRepo
       .createQueryBuilder('cat')
       .where('cat.path LIKE :pathPrefix', { pathPrefix: `${oldPath}/%` })
@@ -386,8 +384,15 @@ export class ProductCategoriesService {
       const relativeSuffix = desc.path.substring(oldPath.length);
       desc.path = `${newBasePath}${relativeSuffix}`;
       desc.level = desc.path.split('/').length;
-      await this.categoryRepo.save(desc);
     }
+
+    await saveInChunksTransactional(
+      this.categoryRepo.manager.connection,
+      ProductCategoryEntity,
+      [category, ...descendants],
+      200,
+      'MoveProductCategory',
+    );
 
     await this.audit.log({
       action: 'MOVE_PRODUCT_CATEGORY',

@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { DeleteMode } from '../../common/services';
+import { Roles, ADMIN_ROLES } from '../../common';
 import {
   CreateUserDto,
   UpdateUserDto,
@@ -27,9 +28,11 @@ import {
   AddUserPermissionDto,
   RemoveUserPermissionDto,
   CheckPermissionDto,
+  UserQueryDto,
 } from './dto';
 
 @ApiTags('Users')
+@Roles(...ADMIN_ROLES)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -42,7 +45,7 @@ export class UsersController {
     description: 'Retrieves all users along with their associated role, status, and company.',
   })
   @ApiResponse({ status: 200, description: 'List of users' })
-  findAll(@Query() query: any) {
+  findAll(@Query() query: UserQueryDto) {
     return this.usersService.findAll(query);
   }
 

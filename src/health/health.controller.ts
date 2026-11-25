@@ -2,8 +2,10 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
+import { Public } from '../common/decorators';
 
 @ApiTags('Health & Telemetry')
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(

@@ -4,8 +4,10 @@ import { ListCategoriesUseCase } from "../../application/use-cases/list-categori
 import { GetCategoryUseCase } from "../../application/use-cases/get-category/get-category.use-case";
 import { CategoryQueryDto } from "../dto/category-query.dto";
 import { API_HEADERS } from "../../../../config/headers.config";
+import { Public } from "../../../../common";
 
 @ApiTags(API_HEADERS.modules.categories.tag)
+@Public()
 @Controller("categories")
 export class PublicCategoryController {
   constructor(
@@ -27,6 +29,7 @@ export class PublicCategoryController {
 }
 
 @ApiTags("Master Categories")
+@Public()
 @Controller("master-categories")
 export class PublicMasterCategoryAliasController extends PublicCategoryController {}
 

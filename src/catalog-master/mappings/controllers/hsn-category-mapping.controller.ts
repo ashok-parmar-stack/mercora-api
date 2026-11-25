@@ -16,8 +16,10 @@ import {
 } from '@nestjs/swagger';
 import { HsnCategoryMappingService } from '../services/hsn-category-mapping.service';
 import { MapHsnCategoryDto } from '../dto';
+import { Roles, CATALOG_ADMIN_ROLES } from '../../../common';
 
 @ApiTags('Catalog Master - HSN Category Mappings')
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller('v1/admin')
 export class HsnCategoryMappingController {
   constructor(private readonly mappingService: HsnCategoryMappingService) {}

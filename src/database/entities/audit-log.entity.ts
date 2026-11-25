@@ -3,6 +3,7 @@ import { CreateTimestampColumn } from '../../common/database';
 import { UserEntity } from './user.entity';
 
 @Entity('audit_logs')
+@Index(['module', 'createdAt'])
 export class AuditLogEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

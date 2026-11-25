@@ -1,12 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { HsnCodeEntity, HsnLevelType } from '../entities/hsn-code.entity';
 import { MasterSyncRunEntity } from '../../../database/entities/master-sync-run.entity';
 import { MasterSyncErrorEntity } from '../../../database/entities/master-sync-error.entity';
 import { StatusEntity } from '../../../database/entities/status.entity';
 import { IcegateSourceAdapter } from '../adapters/icegate-source.adapter';
 import { MercoraLogger } from '../../../common/logger';
+import { saveInChunksTransactional } from '../../../common/utils/bulk-upsert.util';
+
+const HSN_PASS_ORDER: HsnLevelType[] = [
+  'CHAPTER_2',
+  'HEADING_4',
+  'SUBHEADING_6',
+  'TARIFF_8',
+];
 
 @Injectable()
 export class HsnSyncService {
@@ -23,6 +31,64 @@ export class HsnSyncService {
     private readonly statusRepo: Repository<StatusEntity>,
     private readonly icegateAdapter: IcegateSourceAdapter,
   ) {}
+
+  private resolveParentId(
+    code: string,
+    level: string,
+    codeToEntityMap: Map<string, HsnCodeEntity>,
+  ): string | null {
+    if (level === 'HEADING_4') {
+      return codeToEntityMap.get(code.substring(0, 2))?.id || null;
+    }
+    if (level === 'SUBHEADING_6') {
+      return codeToEntityMap.get(code.substring(0, 4))?.id || null;
+    }
+    if (level === 'TARIFF_8') {
+      return (
+        codeToEntityMap.get(code.substring(0, 6))?.id ||
+        codeToEntityMap.get(code.substring(0, 4))?.id ||
+        null
+      );
+    }
+    return null;
+  }
+
+  private async saveBatchWithErrorTracking(
+    runId: string,
+    items: Array<{ entity: HsnCodeEntity; rowNumber: number; raw: unknown }>,
+    isInsert: boolean,
+  ): Promise<{ succeeded: number; failed: number }> {
+    let succeeded = 0;
+    let failed = 0;
+    const chunkSize = 200;
+
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const slice = items.slice(i, i + chunkSize);
+      try {
+        await this.hsnRepo.save(slice.map((item) => item.entity));
+        succeeded += slice.length;
+      } catch {
+        for (const item of slice) {
+          try {
+            await this.hsnRepo.save(item.entity);
+            succeeded++;
+          } catch (err: any) {
+            failed++;
+            await this.syncErrorRepo.save({
+              syncRunId: runId,
+              rowNumber: item.rowNumber,
+              sourceCode: item.entity.code,
+              errorType: isInsert ? 'INGESTION_ERROR' : 'UPDATE_ERROR',
+              errorMessage: err?.message || 'Failed to save record',
+              rawData: item.raw as any,
+            });
+          }
+        }
+      }
+    }
+
+    return { succeeded, failed };
+  }
 
   /**
    * Run HSN / ITCHS synchronization from official Government source
@@ -42,42 +108,33 @@ export class HsnSyncService {
     let failed = 0;
 
     try {
-      // 1. Fetch raw government records
       const rawRecords = await this.icegateAdapter.fetchOfficialRecords();
       run.totalRecords = rawRecords.length;
 
-      // 2. Resolve default active status
       const activeStatus = await this.statusRepo.findOne({
         where: { code: 'ACTIVE' },
       });
       const statusId = activeStatus?.id || null;
 
-      // Map to keep track of created/existing entities by code for instant parent resolution
       const codeToEntityMap = new Map<string, HsnCodeEntity>();
-
-      // Load existing records into map
       const existingRecords = await this.hsnRepo.find();
       for (const rec of existingRecords) {
         codeToEntityMap.set(rec.code, rec);
       }
 
-      // 3. Ingestion Pass 1: Chapters (2-digit) & Headings (4-digit)
-      const pass1Records = rawRecords.filter(
-        (r) => r.level === 'CHAPTER_2' || r.level === 'HEADING_4',
-      );
-      for (let i = 0; i < pass1Records.length; i++) {
-        const raw = pass1Records[i];
-        try {
-          let parentId: string | null = null;
-          if (raw.level === 'HEADING_4') {
-            const parentChapterCode = raw.code.substring(0, 2);
-            const parent = codeToEntityMap.get(parentChapterCode);
-            if (parent) {
-              parentId = parent.id;
-            }
-          }
+      const syncTimestamp = new Date();
 
+      for (const level of HSN_PASS_ORDER) {
+        const levelRecords = rawRecords.filter((r) => r.level === level);
+        const toInsert: Array<{ entity: HsnCodeEntity; rowNumber: number; raw: unknown }> = [];
+        const toUpdate: Array<{ entity: HsnCodeEntity; rowNumber: number; raw: unknown }> = [];
+        const unchangedIds: string[] = [];
+
+        for (let i = 0; i < levelRecords.length; i++) {
+          const raw = levelRecords[i];
+          const parentId = this.resolveParentId(raw.code, raw.level, codeToEntityMap);
           const existing = codeToEntityMap.get(raw.code);
+
           if (!existing) {
             const newEntity = this.hsnRepo.create({
               code: raw.code,
@@ -90,11 +147,10 @@ export class HsnSyncService {
               source: raw.source,
               sourceCode: raw.sourceCode,
               sourceRecordId: raw.sourceRecordId,
-              lastSyncedAt: new Date(),
+              lastSyncedAt: syncTimestamp,
             });
-            const saved = await this.hsnRepo.save(newEntity);
-            codeToEntityMap.set(saved.code, saved);
-            inserted++;
+            codeToEntityMap.set(newEntity.code, newEntity);
+            toInsert.push({ entity: newEntity, rowNumber: i + 1, raw });
           } else {
             let hasChanged = false;
             if (existing.name !== raw.name || existing.description !== raw.description) {
@@ -106,114 +162,59 @@ export class HsnSyncService {
               existing.parentId = parentId;
               hasChanged = true;
             }
-            existing.lastSyncedAt = new Date();
-            await this.hsnRepo.save(existing);
+            existing.lastSyncedAt = syncTimestamp;
+
             if (hasChanged) {
-              updated++;
+              toUpdate.push({ entity: existing, rowNumber: i + 1, raw });
             } else {
+              unchangedIds.push(existing.id);
               unchanged++;
             }
           }
-        } catch (err: any) {
-          failed++;
-          await this.syncErrorRepo.save({
-            syncRunId: run.id,
-            rowNumber: i + 1,
-            sourceCode: raw.code,
-            errorType: 'INGESTION_ERROR',
-            errorMessage: err?.message || 'Failed to save record',
-            rawData: raw as any,
-          });
+        }
+
+        const insertResult = await this.saveBatchWithErrorTracking(run.id, toInsert, true);
+        inserted += insertResult.succeeded;
+        failed += insertResult.failed;
+
+        const updateResult = await this.saveBatchWithErrorTracking(run.id, toUpdate, false);
+        updated += updateResult.succeeded;
+        failed += updateResult.failed;
+
+        for (let i = 0; i < unchangedIds.length; i += 500) {
+          const idChunk = unchangedIds.slice(i, i + 500);
+          await this.hsnRepo
+            .createQueryBuilder()
+            .update(HsnCodeEntity)
+            .set({ lastSyncedAt: syncTimestamp })
+            .whereInIds(idChunk)
+            .execute();
         }
       }
 
-      // 4. Ingestion Pass 2: Subheadings (6-digit) & Tariff Items (8-digit)
-      const pass2Records = rawRecords.filter(
-        (r) => r.level === 'SUBHEADING_6' || r.level === 'TARIFF_8',
+      // Compute leaf flags from parent references without joining full children graphs
+      const allHsnRows = await this.hsnRepo.find({
+        select: ['id', 'parentId', 'isLeaf'],
+      });
+      const parentIds = new Set(
+        allHsnRows.map((row) => row.parentId).filter((pid): pid is string => Boolean(pid)),
       );
-      for (let i = 0; i < pass2Records.length; i++) {
-        const raw = pass2Records[i];
-        try {
-          let parentId: string | null = null;
-          if (raw.level === 'SUBHEADING_6') {
-            const parentHeadingCode = raw.code.substring(0, 4);
-            const parent = codeToEntityMap.get(parentHeadingCode);
-            if (parent) {
-              parentId = parent.id;
-            }
-          } else if (raw.level === 'TARIFF_8') {
-            const parentSubheadingCode = raw.code.substring(0, 6);
-            let parent = codeToEntityMap.get(parentSubheadingCode);
-            if (!parent) {
-              const parentHeadingCode = raw.code.substring(0, 4);
-              parent = codeToEntityMap.get(parentHeadingCode);
-            }
-            if (parent) {
-              parentId = parent.id;
-            }
-          }
-
-          const existing = codeToEntityMap.get(raw.code);
-          if (!existing) {
-            const newEntity = this.hsnRepo.create({
-              code: raw.code,
-              name: raw.name,
-              description: raw.description,
-              level: raw.level as HsnLevelType,
-              unit: raw.unit || null,
-              parentId,
-              statusId,
-              source: raw.source,
-              sourceCode: raw.sourceCode,
-              sourceRecordId: raw.sourceRecordId,
-              lastSyncedAt: new Date(),
-            });
-            const saved = await this.hsnRepo.save(newEntity);
-            codeToEntityMap.set(saved.code, saved);
-            inserted++;
-          } else {
-            let hasChanged = false;
-            if (existing.name !== raw.name || existing.description !== raw.description) {
-              existing.name = raw.name;
-              existing.description = raw.description;
-              hasChanged = true;
-            }
-            if (parentId && existing.parentId !== parentId) {
-              existing.parentId = parentId;
-              hasChanged = true;
-            }
-            existing.lastSyncedAt = new Date();
-            await this.hsnRepo.save(existing);
-            if (hasChanged) {
-              updated++;
-            } else {
-              unchanged++;
-            }
-          }
-        } catch (err: any) {
-          failed++;
-          await this.syncErrorRepo.save({
-            syncRunId: run.id,
-            rowNumber: i + 1,
-            sourceCode: raw.code,
-            errorType: 'INGESTION_ERROR',
-            errorMessage: err?.message || 'Failed to save record',
-            rawData: raw as any,
-          });
+      const leafUpdates = allHsnRows.filter((row) => {
+        const expectedLeaf = !parentIds.has(row.id);
+        if (row.isLeaf !== expectedLeaf) {
+          row.isLeaf = expectedLeaf;
+          return true;
         }
-      }
+        return false;
+      });
+      await saveInChunksTransactional(
+        this.hsnRepo.manager.connection,
+        HsnCodeEntity,
+        leafUpdates,
+        200,
+        'HsnUpdateLeafFlags',
+      );
 
-      // 5. Update is_leaf flags
-      const allHsndata = await this.hsnRepo.find({ relations: ['children'] });
-      for (const item of allHsndata) {
-        const isLeaf = !item.children || item.children.length === 0;
-        if (item.isLeaf !== isLeaf) {
-          item.isLeaf = isLeaf;
-          await this.hsnRepo.save(item);
-        }
-      }
-
-      // 6. Complete Sync Run
       run.status = failed > 0 ? (inserted + updated > 0 ? 'COMPLETED' : 'FAILED') : 'COMPLETED';
       run.insertedRecords = inserted;
       run.updatedRecords = updated;

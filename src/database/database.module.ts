@@ -26,6 +26,7 @@ import {
   SessionEntity,
   EmailVerificationEntity,
   PasswordResetEntity,
+  BusinessEnquiryEntity,
 } from './entities';
 import { BusinessOrmEntity } from '../modules/businesses/infrastructure/persistence/entities/business-orm.entity';
 import { CategoryOrmEntity } from '../modules/categories/infrastructure/persistence/entities/category.orm-entity';
@@ -60,6 +61,7 @@ const allEntities = [
   SessionEntity,
   EmailVerificationEntity,
   PasswordResetEntity,
+  BusinessEnquiryEntity,
 ];
 
 
@@ -72,6 +74,8 @@ const allEntities = [
         const dbType = config.get<string>('database.type');
         const dbUrl = config.get<string>('database.url');
         const sslEnabled = config.get<boolean>('database.ssl');
+        const synchronize = Boolean(config.get<boolean>('database.synchronize'));
+        const logging = Boolean(config.get<boolean>('database.logging'));
 
         if (dbType === 'postgres' || dbUrl) {
           return {
@@ -85,10 +89,12 @@ const allEntities = [
                   password: config.get<string>('database.password'),
                   database: config.get<string>('database.database'),
                 }),
-            ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+            ssl: sslEnabled
+              ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' }
+              : false,
             entities: allEntities,
-            synchronize: true, // Auto schema sync in development / seed
-            logging: false,
+            synchronize,
+            logging,
             extra: {
               timezone: 'UTC',
             },
@@ -100,8 +106,8 @@ const allEntities = [
           type: 'sqlite',
           database: config.get<string>('database.sqlitePath') || './mercora.sqlite',
           entities: allEntities,
-          synchronize: true,
-          logging: false,
+          synchronize,
+          logging,
         };
       },
     }),

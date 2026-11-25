@@ -16,6 +16,8 @@ import { EmailModule } from '../email/email.module';
 
 import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
+import { RegistrationVerificationService } from './services/registration-verification.service';
+import { PasswordRecoveryService } from './services/password-recovery.service';
 import { PasswordService } from './services/password.service';
 import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
@@ -37,9 +39,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret:
-          config.get<string>('auth.jwtAccessSecret') ||
-          'mercora-jwt-access-secret-key-super-secure-production-2026',
+        secret: config.getOrThrow<string>('auth.jwtAccessSecret'),
         signOptions: {
           expiresIn: (config.get<string>('auth.accessTokenExpiresIn') || '15m') as StringValue,
         },
@@ -51,6 +51,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
   controllers: [AuthController],
   providers: [
     AuthService,
+    RegistrationVerificationService,
+    PasswordRecoveryService,
     PasswordService,
     TokenService,
     SessionService,

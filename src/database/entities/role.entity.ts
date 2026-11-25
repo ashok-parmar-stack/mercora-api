@@ -17,6 +17,7 @@ export class RoleEntity {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Index()
   @Column({ name: 'status_id', type: 'bigint', nullable: true })
   statusId: string;
 

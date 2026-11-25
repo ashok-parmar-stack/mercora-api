@@ -5,7 +5,7 @@ import {
 } from "../../../domain/repositories/category.repository.interface";
 import { UpdateCategoryDto } from "./update-category.dto";
 import { CategoryEntity } from "../../../domain/entities/category.entity";
-import { API_MESSAGES } from "../../../../../config/messages.config";
+import { API_MESSAGES } from "../../../../../common/messages";
 
 @Injectable()
 export class UpdateCategoryUseCase {

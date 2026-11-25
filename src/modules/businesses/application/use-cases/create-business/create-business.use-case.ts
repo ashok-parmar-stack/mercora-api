@@ -9,7 +9,7 @@ import { BusinessRating } from "../../../domain/value-objects/business-rating.vo
 import { BusinessResponseDto } from "../../dto/business-response.dto";
 import { VerificationStatus } from "../../../domain/enums/verification-status.enum";
 import { BusinessType } from "../../../domain/enums/business-type.enum";
-import { API_MESSAGES } from "../../../../../config/messages.config";
+import { API_MESSAGES } from "../../../../../common/messages";
 
 @Injectable()
 export class CreateBusinessUseCase {

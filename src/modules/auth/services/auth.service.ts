@@ -1,27 +1,21 @@
 import {
-  BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
-  OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 
 import { UserEntity } from '../../../database/entities/user.entity';
-import { StatusEntity } from '../../../database/entities/status.entity';
-import { RoleEntity } from '../../../database/entities/role.entity';
 import { SessionEntity } from '../../../database/entities/session.entity';
-import { EmailVerificationEntity } from '../../../database/entities/email-verification.entity';
-import { PasswordResetEntity } from '../../../database/entities/password-reset.entity';
 
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
 import { SessionMetadata, SessionService } from './session.service';
+import { RegistrationVerificationService } from './registration-verification.service';
+import { PasswordRecoveryService } from './password-recovery.service';
 import { EmailDispatcherService } from '../../email/services/email-dispatcher.service';
 
 import { RegisterDto } from '../dto/register.dto';
@@ -33,38 +27,25 @@ import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 
 @Injectable()
-export class AuthService implements OnModuleInit {
+export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
-    @InjectRepository(StatusEntity)
-    private readonly statusRepo: Repository<StatusEntity>,
-    @InjectRepository(RoleEntity)
-    private readonly roleRepo: Repository<RoleEntity>,
     @InjectRepository(SessionEntity)
     private readonly sessionRepo: Repository<SessionEntity>,
-    @InjectRepository(EmailVerificationEntity)
-    private readonly emailVerifRepo: Repository<EmailVerificationEntity>,
-    @InjectRepository(PasswordResetEntity)
-    private readonly pwdResetRepo: Repository<PasswordResetEntity>,
     private readonly passwordService: PasswordService,
     private readonly tokenService: TokenService,
     private readonly sessionService: SessionService,
+    private readonly registrationService: RegistrationVerificationService,
+    private readonly passwordRecoveryService: PasswordRecoveryService,
     private readonly emailDispatcher: EmailDispatcherService,
-    private readonly configService: ConfigService,
   ) { }
 
   /**
-   * On module startup, automatically check and upgrade any plaintext user passwords to bcrypt.
-   */
-  async onModuleInit(): Promise<void> {
-    await this.autoMigratePlaintextPasswords();
-  }
-
-  /**
-   * Scans for any unhashed passwords in the database and upgrades them immediately to bcrypt hashes.
+   * Scans for unhashed legacy passwords and upgrades them to bcrypt hashes.
+   * Invoked on-demand via maintenance CLI rather than every worker boot.
    */
   async autoMigratePlaintextPasswords(): Promise<void> {
     try {
@@ -94,91 +75,7 @@ export class AuthService implements OnModuleInit {
    * 1. Register new user with PENDING status and send verification email
    */
   async register(dto: RegisterDto, ipAddress?: string): Promise<{ message: string; email: string }> {
-    const normalizedEmail = dto.email.trim().toLowerCase();
-
-    // Check duplicate email
-    const existing = await this.userRepo.findOne({
-      where: { email: normalizedEmail },
-    });
-    if (existing) {
-      throw new ConflictException('An account with this email already exists.');
-    }
-
-    // Resolve or find PENDING user status
-    let pendingStatus = await this.statusRepo.findOne({
-      where: { type: 'USER', code: 'PENDING' },
-    });
-    if (!pendingStatus) {
-      pendingStatus = await this.statusRepo.save(
-        this.statusRepo.create({
-          type: 'USER',
-          code: 'PENDING',
-          name: 'Pending Verification',
-          description: 'Awaiting email verification',
-          isActive: true,
-        }),
-      );
-    }
-
-    // Resolve default user role (CUSTOMER / BUYER / USER)
-    let defaultRole = await this.roleRepo.findOne({
-      where: { code: 'CUSTOMER' },
-    });
-    if (!defaultRole) {
-      defaultRole = await this.roleRepo.findOne({
-        where: { code: 'VIEWER' },
-      });
-    }
-
-    const hashedPassword = await this.passwordService.hash(dto.password);
-
-    const user = this.userRepo.create({
-      name: dto.name.trim(),
-      email: normalizedEmail,
-      password: hashedPassword,
-      statusId: pendingStatus.id,
-      roleId: defaultRole ? defaultRole.id : undefined,
-      isEmailVerified: false,
-    });
-
-    const savedUser = await this.userRepo.save(user);
-
-    // Create verification token (valid for 24 hours)
-    const rawToken = this.tokenService.generateRandomToken(32);
-    const tokenHash = this.tokenService.hashToken(rawToken);
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await this.emailVerifRepo.save(
-      this.emailVerifRepo.create({
-        userId: savedUser.id,
-        tokenHash,
-        expiresAt,
-        ipAddress,
-      }),
-    );
-
-    // Build frontend verification URL
-    const frontendUrl =
-      this.configService.get<string>('auth.frontendUrl') ||
-      'http://localhost:9000';
-    const verificationLink = `${frontendUrl}/verify-email?token=${rawToken}`;
-
-    // Dispatch dynamic email asynchronously (non-blocking)
-    this.emailDispatcher.sendAsync({
-      to: savedUser.email,
-      templateCode: 'EMAIL_VERIFICATION',
-      userId: savedUser.id,
-      context: {
-        user_name: savedUser.name,
-        verification_link: verificationLink,
-        expiry_minutes: 1440,
-      },
-    });
-
-    return {
-      message: 'Registration successful. A verification link has been sent to your email.',
-      email: savedUser.email,
-    };
+    return this.registrationService.register(dto, ipAddress);
   }
 
   /**
@@ -396,51 +293,7 @@ export class AuthService implements OnModuleInit {
    * 5. Verify Email
    */
   async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
-    const tokenHash = this.tokenService.hashToken(dto.token);
-
-    const record = await this.emailVerifRepo.findOne({
-      where: { tokenHash },
-      relations: ['user'],
-    });
-
-    if (!record) {
-      throw new BadRequestException('Invalid or expired verification link.');
-    }
-
-    if (record.usedAt) {
-      return { message: 'Email already verified. You may proceed to log in.' };
-    }
-
-    if (record.expiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Verification link has expired. Please request a new one.');
-    }
-
-    // Mark token as used
-    record.usedAt = new Date();
-    await this.emailVerifRepo.save(record);
-
-    // Find ACTIVE status
-    let activeStatus = await this.statusRepo.findOne({
-      where: { type: 'USER', code: 'ACTIVE' },
-    });
-    if (!activeStatus) {
-      activeStatus = await this.statusRepo.save(
-        this.statusRepo.create({
-          type: 'USER',
-          code: 'ACTIVE',
-          name: 'Active',
-          isActive: true,
-        }),
-      );
-    }
-
-    // Upgrade user
-    await this.userRepo.update(record.userId, {
-      isEmailVerified: true,
-      statusId: activeStatus.id,
-    });
-
-    return { message: 'Email verified successfully! You may now sign in.' };
+    return this.registrationService.verifyEmail(dto);
   }
 
   /**
@@ -450,50 +303,7 @@ export class AuthService implements OnModuleInit {
     dto: ResendVerificationDto,
     ipAddress?: string,
   ): Promise<{ message: string }> {
-    const normalizedEmail = dto.email.trim().toLowerCase();
-    const user = await this.userRepo.findOne({
-      where: { email: normalizedEmail },
-    });
-
-    // Anti-enumeration: Return success even if email not found
-    if (!user || user.isEmailVerified) {
-      return {
-        message: 'If an unverified account exists with that email, a verification link has been sent.',
-      };
-    }
-
-    const rawToken = this.tokenService.generateRandomToken(32);
-    const tokenHash = this.tokenService.hashToken(rawToken);
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await this.emailVerifRepo.save(
-      this.emailVerifRepo.create({
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-        ipAddress,
-      }),
-    );
-
-    const frontendUrl =
-      this.configService.get<string>('auth.frontendUrl') ||
-      'http://localhost:9000';
-    const verificationLink = `${frontendUrl}/verify-email?token=${rawToken}`;
-
-    this.emailDispatcher.sendAsync({
-      to: user.email,
-      templateCode: 'EMAIL_VERIFICATION',
-      userId: user.id,
-      context: {
-        user_name: user.name,
-        verification_link: verificationLink,
-        expiry_minutes: 1440,
-      },
-    });
-
-    return {
-      message: 'If an unverified account exists with that email, a verification link has been sent.',
-    };
+    return this.registrationService.resendVerification(dto, ipAddress);
   }
 
   /**
@@ -503,98 +313,14 @@ export class AuthService implements OnModuleInit {
     dto: ForgotPasswordDto,
     meta: SessionMetadata,
   ): Promise<{ message: string }> {
-    const normalizedEmail = dto.email.trim().toLowerCase();
-    const user = await this.userRepo.findOne({
-      where: { email: normalizedEmail },
-    });
-
-    // Anti-enumeration
-    if (!user) {
-      return {
-        message: 'If an account exists with that email, a password reset link has been dispatched.',
-      };
-    }
-
-    const rawToken = this.tokenService.generateRandomToken(32);
-    const tokenHash = this.tokenService.hashToken(rawToken);
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-
-    await this.pwdResetRepo.save(
-      this.pwdResetRepo.create({
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-        ipAddress: meta.ipAddress,
-      }),
-    );
-
-    const frontendUrl =
-      this.configService.get<string>('auth.frontendUrl') ||
-      'http://localhost:9000';
-    const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
-
-    this.emailDispatcher.sendAsync({
-      to: user.email,
-      templateCode: 'PASSWORD_RESET',
-      userId: user.id,
-      context: {
-        user_name: user.name,
-        reset_link: resetLink,
-        expiry_minutes: 30,
-        device_name: meta.userAgent || meta.deviceId || 'Browser',
-        ip_address: meta.ipAddress || 'Unknown',
-      },
-    });
-
-    return {
-      message: 'If an account exists with that email, a password reset link has been dispatched.',
-    };
+    return this.passwordRecoveryService.forgotPassword(dto, meta);
   }
 
   /**
    * 8. Reset Password
    */
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-    const tokenHash = this.tokenService.hashToken(dto.token);
-
-    const record = await this.pwdResetRepo.findOne({
-      where: { tokenHash },
-      relations: ['user'],
-    });
-
-    if (!record) {
-      throw new BadRequestException('Invalid or expired password reset link.');
-    }
-
-    if (record.usedAt) {
-      throw new BadRequestException('This reset link has already been used.');
-    }
-
-    if (record.expiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Password reset link has expired. Please request a new one.');
-    }
-
-    // Hash new password
-    const hashedPassword = await this.passwordService.hash(dto.password);
-
-    // Update user password
-    await this.userRepo.update(record.userId, {
-      password: hashedPassword,
-    });
-
-    // Mark token as used
-    record.usedAt = new Date();
-    await this.pwdResetRepo.save(record);
-
-    // REVOKE ALL SESSIONS for security
-    await this.sessionService.revokeAllUserSessions(
-      record.userId,
-      'ADMIN_REVOKED',
-    );
-
-    return {
-      message: 'Password reset successfully. All existing sessions were revoked. Please log in with your new password.',
-    };
+    return this.passwordRecoveryService.resetPassword(dto);
   }
 
   /**

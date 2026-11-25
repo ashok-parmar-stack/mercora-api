@@ -27,6 +27,7 @@ import {
   SessionEntity,
   EmailVerificationEntity,
   PasswordResetEntity,
+  BusinessEnquiryEntity,
 } from './entities';
 import { BusinessOrmEntity } from '../modules/businesses/infrastructure/persistence/entities/business-orm.entity';
 import { CategoryOrmEntity } from '../modules/categories/infrastructure/persistence/entities/category.orm-entity';
@@ -91,6 +92,7 @@ export const allEntities = [
   SessionEntity,
   EmailVerificationEntity,
   PasswordResetEntity,
+  BusinessEnquiryEntity,
 ];
 
 const dbUrl = process.env.DATABASE_URL;

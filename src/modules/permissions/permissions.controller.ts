@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { PermissionsService } from './permissions.service';
 import { DeleteMode } from '../../common/services';
+import { Roles, ADMIN_ROLES } from '../../common';
 import {
   CreatePermissionDto,
   UpdatePermissionDto,
@@ -27,6 +28,7 @@ import {
 } from './dto';
 
 @ApiTags('Permissions')
+@Roles(...ADMIN_ROLES)
 @Controller('permissions')
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}

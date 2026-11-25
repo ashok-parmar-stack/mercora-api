@@ -17,6 +17,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ProductCategoriesService } from '../services/product-categories.service';
+import { Roles, CATALOG_ADMIN_ROLES } from '../../../common';
 import {
   CreateProductCategoryDto,
   UpdateProductCategoryDto,
@@ -25,6 +26,7 @@ import {
 } from '../dto';
 
 @ApiTags('Catalog Master - Product Categories')
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller('v1/admin/product-categories')
 export class ProductCategoriesController {
   constructor(private readonly categoriesService: ProductCategoriesService) {}

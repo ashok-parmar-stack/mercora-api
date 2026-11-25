@@ -4,7 +4,7 @@ import {
   CATEGORY_REPOSITORY_TOKEN,
 } from "../../../domain/repositories/category.repository.interface";
 import { CategoryEntity } from "../../../domain/entities/category.entity";
-import { API_MESSAGES } from "../../../../../config/messages.config";
+import { API_MESSAGES } from "../../../../../common/messages";
 
 @Injectable()
 export class GetCategoryUseCase {

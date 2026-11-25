@@ -40,6 +40,7 @@ export class SubDistrictEntity {
   @Column({ name: 'state_lgd_code', type: 'varchar', length: 50, nullable: true })
   stateLgdCode?: string;
 
+  @Index()
   @Column({ name: 'district_id', type: 'uuid' })
   districtId: string;
 
@@ -53,6 +54,7 @@ export class SubDistrictEntity {
   @Column({ name: 'census_code', type: 'varchar', length: 50, nullable: true })
   censusCode: string;
 
+  @Index()
   @Column({ name: 'status_id', type: 'bigint', nullable: true })
   statusId: string;
 

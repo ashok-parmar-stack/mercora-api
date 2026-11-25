@@ -4,8 +4,10 @@ import { ListBusinessCategoriesUseCase } from "../../application/use-cases/list-
 import { GetBusinessCategoryUseCase } from "../../application/use-cases/get-business-category.use-case";
 import { GetBusinessCategoryTreeUseCase } from "../../application/use-cases/get-business-category-tree.use-case";
 import { BusinessCategoryQueryDto } from "../../application/dto/business-category-query.dto";
+import { Public } from "../../../../common";
 
 @ApiTags("Business Categories / Types Master")
+@Public()
 @Controller("business-categories")
 export class PublicBusinessCategoryController {
   constructor(
@@ -35,5 +37,6 @@ export class PublicBusinessCategoryController {
 }
 
 @ApiTags("Business Categories / Types Master")
+@Public()
 @Controller("business-types")
 export class PublicBusinessTypeAliasController extends PublicBusinessCategoryController {}

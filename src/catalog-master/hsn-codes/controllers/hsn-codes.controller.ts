@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { HsnCodesService } from '../services/hsn-codes.service';
 import { HsnSyncService } from '../services/hsn-sync.service';
+import { Roles, CATALOG_ADMIN_ROLES } from '../../../common';
 import {
   CreateHsnCodeDto,
   UpdateHsnCodeDto,
@@ -27,6 +28,7 @@ import {
 } from '../dto';
 
 @ApiTags('Catalog Master - HSN Codes')
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller('v1/admin/hsn-codes')
 export class HsnCodesController {
   constructor(

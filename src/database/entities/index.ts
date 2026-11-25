@@ -15,6 +15,7 @@ export * from './master-sync-error.entity';
 export * from './session.entity';
 export * from './email-verification.entity';
 export * from './password-reset.entity';
+export * from './business-enquiry.entity';
 
 // Master Data Entities
 export * from '../../geographic-master/countries/entities/country.entity';

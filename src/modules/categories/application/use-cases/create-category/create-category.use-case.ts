@@ -6,7 +6,7 @@ import {
 import { CreateCategoryDto } from "./create-category.dto";
 import { CategoryEntity } from "../../../domain/entities/category.entity";
 import { CategoryStatus } from "../../../domain/enums/category-status.enum";
-import { API_MESSAGES } from "../../../../../config/messages.config";
+import { API_MESSAGES } from "../../../../../common/messages";
 
 @Injectable()
 export class CreateCategoryUseCase {

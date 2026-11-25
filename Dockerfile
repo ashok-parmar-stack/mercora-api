@@ -1,32 +1,25 @@
-# Multi-stage production build for NestJS Backend
+# Multi-stage production build for standalone NestJS API
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root workspace configs
 COPY package.json package-lock.json* ./
-COPY packages/ ./packages/
-COPY apps/backend/ ./apps/backend/
+RUN npm ci
 
-# Install dependencies and build
-RUN npm install
-RUN npm --workspace=packages/theme-config run build || true
-RUN npm --workspace=packages/shared-types run build || true
-RUN npm --workspace=apps/backend run build
+COPY . .
+RUN npm run build
 
-# Production runner image
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=4000
+ENV PORT=5001
 
 COPY package.json package-lock.json* ./
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/apps/backend/package.json ./apps/backend/package.json
-COPY --from=builder /app/node_modules ./node_modules
+RUN npm ci --omit=dev && npm cache clean --force
 
-EXPOSE 4000
+COPY --from=builder /app/dist ./dist
 
-CMD ["node", "apps/backend/dist/main.js"]
+EXPOSE 5001
+
+CMD ["node", "dist/main.js"]

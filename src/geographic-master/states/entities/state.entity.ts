@@ -34,6 +34,7 @@ export class StateEntity {
   @Column({ name: 'lgd_code', type: 'varchar', length: 50, nullable: true })
   lgdCode?: string;
 
+  @Index()
   @Column({ name: 'country_id', type: 'uuid' })
   countryId: string;
 
@@ -47,6 +48,7 @@ export class StateEntity {
   @Column({ name: 'census_code', type: 'varchar', length: 50, nullable: true })
   censusCode: string;
 
+  @Index()
   @Column({ name: 'status_id', type: 'bigint', nullable: true })
   statusId: string;
 

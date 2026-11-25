@@ -1,12 +1,14 @@
-import { Controller, Post, Body, Put, Param, UseGuards } from "@nestjs/common";
+import { Controller, Post, Body, Put, Param } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { CreateBusinessUseCase } from "../../application/use-cases/create-business/create-business.use-case";
 import { UpdateBusinessUseCase } from "../../application/use-cases/update-business/update-business.use-case";
 import { CreateBusinessDto } from "../../application/use-cases/create-business/create-business.dto";
 import { UpdateBusinessDto } from "../../application/use-cases/update-business/update-business.dto";
 import { API_HEADERS } from "../../../../config/headers.config";
+import { Roles, BUSINESS_WRITE_ROLES } from "../../../../common";
 
 @ApiTags(API_HEADERS.modules.businesses.tag)
+@Roles(...BUSINESS_WRITE_ROLES)
 @Controller("customer/businesses")
 export class CustomerBusinessController {
   constructor(

@@ -1,0 +1,33 @@
+export const ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
+  DATA_MANAGER: 'DATA_MANAGER',
+  SALES: 'SALES',
+  CUSTOMER: 'CUSTOMER',
+  VIEWER: 'VIEWER',
+} as const;
+
+export type RoleCode = (typeof ROLES)[keyof typeof ROLES];
+
+export const ADMIN_ROLES: RoleCode[] = [ROLES.SUPER_ADMIN, ROLES.ADMIN];
+
+export const CATALOG_ADMIN_ROLES: RoleCode[] = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMIN,
+  ROLES.DATA_MANAGER,
+];
+
+export const STAFF_ROLES: RoleCode[] = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMIN,
+  ROLES.DATA_MANAGER,
+  ROLES.SALES,
+];
+
+export const BUSINESS_WRITE_ROLES: RoleCode[] = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMIN,
+  ROLES.DATA_MANAGER,
+  ROLES.SALES,
+  ROLES.CUSTOMER,
+];

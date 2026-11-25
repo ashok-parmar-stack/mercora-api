@@ -21,6 +21,9 @@ import { MasterSyncErrorEntity, MasterSyncRunEntity } from '../database/entities
 
 import { LocationModule } from './location.module';
 import { LocationSyncService } from './location-sync.service';
+import { LocationQueryService } from './location-query.service';
+import { LgdSyncHelperService } from './services/lgd-sync-helper.service';
+import { LocationHierarchySyncService } from './services/location-hierarchy-sync.service';
 import { LGDSource } from './sources/lgd/lgd.source';
 import { LgdStateSource } from './sources/lgd/lgd-state.source';
 import { LgdDistrictSource } from './sources/lgd/lgd-district.source';
@@ -50,6 +53,9 @@ import { LgdSubDistrictSource } from './sources/lgd/lgd-sub-district.source';
     LgdDistrictSource,
     LgdSubDistrictSource,
     LGDSource,
+    LgdSyncHelperService,
+    LocationHierarchySyncService,
+    LocationQueryService,
     LocationSyncService,
     LgdSourceAdapter,
     GeographicSyncService,

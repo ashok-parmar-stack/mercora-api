@@ -80,7 +80,7 @@ export class SessionService {
   async getActiveSession(sessionId: string): Promise<SessionEntity | null> {
     const session = await this.sessionRepo.findOne({
       where: { id: sessionId },
-      relations: ['user'],
+      relations: ['user', 'user.role', 'user.status'],
     });
 
     if (!session) return null;

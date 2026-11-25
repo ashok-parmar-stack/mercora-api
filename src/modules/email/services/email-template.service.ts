@@ -54,7 +54,10 @@ export class EmailTemplateService implements OnModuleInit {
    */
   async getAllTemplates(): Promise<EmailTemplateEntity[]> {
     try {
-      return await this.templateRepo.find({ order: { name: 'ASC' } });
+      return await this.templateRepo.find({
+        relations: ['status'],
+        order: { name: 'ASC' },
+      });
     } catch {
       return [];
     }

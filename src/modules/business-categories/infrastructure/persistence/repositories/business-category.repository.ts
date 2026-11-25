@@ -9,6 +9,7 @@ import { BusinessCategoryEntity } from "../../../domain/entities/business-catego
 import { BusinessCategoryOrmEntity } from "../entities/business-category.orm-entity";
 import { BusinessCategoryMapper } from "../mappers/business-category.mapper";
 import { BusinessCategoryStatus } from "../../../domain/enums/business-category-status.enum";
+import { runInTransaction } from "../../../../../common/utils/transaction-runner.util";
 
 @Injectable()
 export class BusinessCategoryRepository implements IBusinessCategoryRepository {
@@ -123,6 +124,24 @@ export class BusinessCategoryRepository implements IBusinessCategoryRepository {
     const orm = BusinessCategoryMapper.toOrm(entity);
     const saved = await this.ormRepo.save(orm);
     return BusinessCategoryMapper.toDomain(saved);
+  }
+
+  async bulkUpdateOrder(items: Array<{ id: string; displayOrder: number }>): Promise<void> {
+    if (!items || items.length === 0) return;
+
+    await runInTransaction(
+      this.dataSource,
+      async (qr) => {
+        for (const item of items) {
+          await qr.manager.update(
+            BusinessCategoryOrmEntity,
+            { id: item.id },
+            { displayOrder: Number(item.displayOrder) || 0 },
+          );
+        }
+      },
+      "BulkUpdateBusinessCategoryOrder",
+    );
   }
 
   async delete(id: string): Promise<void> {

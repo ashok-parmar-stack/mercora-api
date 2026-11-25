@@ -19,6 +19,9 @@ import { LGDSource } from './sources/lgd/lgd.source';
 
 // Sync & Dropdown Services
 import { LocationSyncService } from './location-sync.service';
+import { LocationQueryService } from './location-query.service';
+import { LgdSyncHelperService } from './services/lgd-sync-helper.service';
+import { LocationHierarchySyncService } from './services/location-hierarchy-sync.service';
 import { LocationController } from './location.controller';
 import { AdminLocationSyncController } from './admin-location-sync.controller';
 
@@ -41,11 +44,17 @@ import { AdminLocationSyncController } from './admin-location-sync.controller';
     LgdDistrictSource,
     LgdSubDistrictSource,
     LGDSource,
+    LgdSyncHelperService,
+    LocationHierarchySyncService,
+    LocationQueryService,
     LocationSyncService,
   ],
   exports: [
     LGDSource,
     LocationSyncService,
+    LocationQueryService,
+    LgdSyncHelperService,
+    LocationHierarchySyncService,
   ],
 })
 export class LocationModule {}

@@ -30,6 +30,13 @@ import { IsString, IsOptional, IsNumber, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StorageService } from './storage.service';
+import { Roles, ADMIN_ROLES, BUSINESS_WRITE_ROLES, STAFF_ROLES } from '../../common';
+import {
+  SAFE_UPLOAD_MIME_TYPES,
+  sanitizeStorageFolder,
+  sanitizeStorageKey,
+  validateUploadedFile,
+} from '../../common/utils/file-validation.util';
 
 // ─── Multer File Type ─────────────────────────────────────────────────────────
 type MulterFile = Express.Multer.File;
@@ -78,6 +85,7 @@ export class StorageController {
   // ── Direct File Upload (multipart/form-data via multer memory storage) ────
 
   @Post('upload')
+  @Roles(...BUSINESS_WRITE_ROLES)
   @ApiOperation({
     summary: 'Direct file upload via multipart/form-data',
     description:
@@ -98,11 +106,24 @@ export class StorageController {
   })
   @ApiQuery({ name: 'folder', required: false, example: 'avatars', description: 'Storage folder prefix' })
   @ApiResponse({ status: 201, description: 'File uploaded – returns key, bucket, and public URL' })
-  @ApiResponse({ status: 400, description: 'No file provided or file too large' })
+  @ApiResponse({ status: 400, description: 'No file provided, invalid type, or file too large' })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: memoryStorage(),           // buffer kept in RAM – safe for Vercel/serverless
+      storage: memoryStorage(),
       limits: { fileSize: MAX_FILE_SIZE },
+      fileFilter: (_req, file, callback) => {
+        const mime = (file.mimetype || '').toLowerCase();
+        if (!(SAFE_UPLOAD_MIME_TYPES as readonly string[]).includes(mime)) {
+          callback(
+            new BadRequestException(
+              `Unsupported file type '${mime}'. Allowed: JPG, PNG, WEBP, GIF, PDF.`,
+            ),
+            false,
+          );
+          return;
+        }
+        callback(null, true);
+      },
     }),
   )
   async uploadFile(
@@ -113,7 +134,9 @@ export class StorageController {
       throw new BadRequestException('No file provided. Send field name "file" in multipart/form-data.');
     }
 
-    const key = this.storageService.generateKey(folder, file.originalname);
+    validateUploadedFile(file);
+    const safeFolder = sanitizeStorageFolder(folder);
+    const key = this.storageService.generateKey(safeFolder, file.originalname);
 
     const stored = await this.storageService.upload({
       key,
@@ -141,6 +164,7 @@ export class StorageController {
   // ── Presigned PUT URL (browser → S3 direct upload) ────────────────────────
 
   @Post('presigned-upload')
+  @Roles(...BUSINESS_WRITE_ROLES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Generate a presigned PUT URL for direct browser-to-S3 upload',
@@ -150,8 +174,9 @@ export class StorageController {
   })
   @ApiResponse({ status: 200, description: 'Presigned upload URL returned' })
   async getPresignedUploadUrl(@Body() dto: PresignedUploadDto) {
+    const safeKey = sanitizeStorageKey(dto.key);
     const url = await this.storageService.getPresignedUploadUrl({
-      key: dto.key,
+      key: safeKey,
       contentType: dto.contentType,
       expiresIn: dto.expiresIn ?? 3600,
     });
@@ -160,13 +185,14 @@ export class StorageController {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Presigned upload URL generated',
-      data: { url, key: dto.key, expiresIn: dto.expiresIn ?? 3600 },
+      data: { url, key: safeKey, expiresIn: dto.expiresIn ?? 3600 },
     };
   }
 
   // ── Presigned GET URL (secure view / download) ────────────────────────────
 
   @Get('presigned-url')
+  @Roles(...STAFF_ROLES)
   @ApiOperation({
     summary: 'Generate a presigned GET URL for secure file access',
     description: 'Returns a time-limited URL that grants temporary read access to a private S3 object.',
@@ -179,13 +205,13 @@ export class StorageController {
     @Query('key') key: string,
     @Query('expiresIn') expiresIn?: string,
   ) {
-    if (!key) throw new BadRequestException('Query parameter "key" is required');
+    const safeKey = sanitizeStorageKey(key);
 
-    const fileExists = await this.storageService.exists(key);
-    if (!fileExists) throw new NotFoundException(`File "${key}" not found in bucket`);
+    const fileExists = await this.storageService.exists(safeKey);
+    if (!fileExists) throw new NotFoundException(`File "${safeKey}" not found in bucket`);
 
     const url = await this.storageService.getPresignedViewUrl({
-      key,
+      key: safeKey,
       expiresIn: expiresIn ? Number(expiresIn) : 3600,
     });
 
@@ -193,13 +219,14 @@ export class StorageController {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'Presigned view URL generated',
-      data: { url, key, expiresIn: Number(expiresIn ?? 3600) },
+      data: { url, key: safeKey, expiresIn: Number(expiresIn ?? 3600) },
     };
   }
 
   // ── File Metadata (HEAD – no download) ────────────────────────────────────
 
   @Get('metadata')
+  @Roles(...STAFF_ROLES)
   @ApiOperation({
     summary: 'Fetch file metadata (HEAD request)',
     description: 'Returns size, content-type, last modified, ETag, and custom metadata without downloading the file body.',
@@ -208,12 +235,12 @@ export class StorageController {
   @ApiResponse({ status: 200, description: 'Metadata returned' })
   @ApiResponse({ status: 404, description: 'File not found' })
   async getMetadata(@Query('key') key: string) {
-    if (!key) throw new BadRequestException('Query parameter "key" is required');
+    const safeKey = sanitizeStorageKey(key);
 
-    const fileExists = await this.storageService.exists(key);
-    if (!fileExists) throw new NotFoundException(`File "${key}" not found in bucket`);
+    const fileExists = await this.storageService.exists(safeKey);
+    if (!fileExists) throw new NotFoundException(`File "${safeKey}" not found in bucket`);
 
-    const metadata = await this.storageService.getMetadata(key);
+    const metadata = await this.storageService.getMetadata(safeKey);
     return {
       success: true,
       statusCode: HttpStatus.OK,
@@ -225,6 +252,7 @@ export class StorageController {
   // ── List Files ────────────────────────────────────────────────────────────
 
   @Get('list')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({
     summary: 'List files under a folder prefix',
     description: 'Returns all objects whose key starts with the given prefix (like listing a folder).',
@@ -248,6 +276,7 @@ export class StorageController {
   // ── Delete File ───────────────────────────────────────────────────────────
 
   @Delete(':key')
+  @Roles(...ADMIN_ROLES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete a file from storage',
@@ -261,18 +290,17 @@ export class StorageController {
     @Param('key') paramKey?: string,
     @Query('key') queryKey?: string,
   ) {
-    const key = paramKey || queryKey;
-    if (!key) throw new BadRequestException('File key is required');
+    const safeKey = sanitizeStorageKey(paramKey || queryKey);
 
-    const fileExists = await this.storageService.exists(key);
-    if (!fileExists) throw new NotFoundException(`File "${key}" not found in bucket`);
+    const fileExists = await this.storageService.exists(safeKey);
+    if (!fileExists) throw new NotFoundException(`File "${safeKey}" not found in bucket`);
 
-    await this.storageService.delete(key);
+    await this.storageService.delete(safeKey);
     return {
       success: true,
       statusCode: HttpStatus.OK,
       message: 'File deleted successfully',
-      data: { key },
+      data: { key: safeKey },
     };
   }
 }

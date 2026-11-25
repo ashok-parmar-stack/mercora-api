@@ -37,6 +37,7 @@ export class DistrictEntity {
   @Column({ name: 'state_lgd_code', type: 'varchar', length: 50, nullable: true })
   stateLgdCode?: string;
 
+  @Index()
   @Column({ name: 'state_id', type: 'uuid' })
   stateId: string;
 
@@ -50,6 +51,7 @@ export class DistrictEntity {
   @Column({ name: 'census_code', type: 'varchar', length: 50, nullable: true })
   censusCode: string;
 
+  @Index()
   @Column({ name: 'status_id', type: 'bigint', nullable: true })
   statusId: string;
 

@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { DeleteMode } from '../../common/services';
+import { Roles, ADMIN_ROLES } from '../../common';
 import {
   CreateRoleDto,
   UpdateRoleDto,
@@ -30,6 +31,7 @@ import {
 } from './dto';
 
 @ApiTags('Roles')
+@Roles(...ADMIN_ROLES)
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}

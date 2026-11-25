@@ -18,6 +18,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CountriesService } from '../services/countries.service';
+import { Roles, CATALOG_ADMIN_ROLES } from '../../../common';
 import {
   CreateCountryDto,
   UpdateCountryDto,
@@ -26,6 +27,7 @@ import {
 } from '../dto';
 
 @ApiTags('Geographic Master - Countries')
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller('v1/admin/countries')
 export class CountriesController {
   constructor(private readonly countriesService: CountriesService) {}

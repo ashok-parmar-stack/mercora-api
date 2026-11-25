@@ -17,6 +17,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { DistrictsService } from '../services/districts.service';
+import { Roles, CATALOG_ADMIN_ROLES } from '../../../common';
 import {
   CreateDistrictDto,
   UpdateDistrictDto,
@@ -25,6 +26,7 @@ import {
 } from '../dto';
 
 @ApiTags('Geographic Master - Districts')
+@Roles(...CATALOG_ADMIN_ROLES)
 @Controller('v1/admin/districts')
 export class DistrictsController {
   constructor(private readonly districtsService: DistrictsService) {}
