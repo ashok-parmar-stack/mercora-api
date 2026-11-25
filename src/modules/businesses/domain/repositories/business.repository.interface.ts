@@ -4,6 +4,7 @@ import { VerificationStatus } from "../enums/verification-status.enum";
 export interface BusinessFindAllOptions {
   query?: string;
   category?: string;
+  location?: string;
   state?: string;
   city?: string;
   businessType?: string;

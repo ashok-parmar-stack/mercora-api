@@ -17,7 +17,7 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
     @InjectRepository(BusinessOrmEntity)
     private readonly ormRepository: Repository<BusinessOrmEntity>,
     private readonly dataSource: DataSource
-  ) {}
+  ) { }
 
   async onModuleInit() {
     const count = await this.ormRepository.count();
@@ -64,11 +64,14 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
     }
 
     if (options.state && options.state !== "all") {
-      queryBuilder.andWhere("LOWER(b.state) = LOWER(:state)", { state: options.state });
+      queryBuilder.andWhere("LOWER(b.state) = LOWER(:state)", { state: options.state.trim() });
+    } else if (options.location && options.location !== "all") {
+      const loc = options.location.trim().toLowerCase();
+      queryBuilder.andWhere("(LOWER(b.state) = :loc OR LOWER(b.city) = :loc)", { loc });
     }
 
     if (options.city && options.city !== "all") {
-      queryBuilder.andWhere("LOWER(b.city) = LOWER(:city)", { city: options.city });
+      queryBuilder.andWhere("LOWER(b.city) = LOWER(:city)", { city: options.city.trim() });
     }
 
     if (options.businessType && options.businessType !== "all") {

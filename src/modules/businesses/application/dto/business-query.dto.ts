@@ -16,6 +16,14 @@ export class BusinessQueryDto {
 
   @IsOptional()
   @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
   businessType?: string;
 
   @IsOptional()
