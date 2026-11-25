@@ -29,10 +29,6 @@ export class BusinessCategoryOrmEntity {
   slug: string;
 
   @Index()
-  @Column({ name: 'parent_id', type: 'varchar', length: 64, nullable: true })
-  parentId?: string | null;
-
-  @Index()
   @Column({ type: 'varchar', length: 64, default: 'general' })
   type: string;
 
