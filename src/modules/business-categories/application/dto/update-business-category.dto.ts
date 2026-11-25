@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, IsEnum } from "class-validator";
+import { IsOptional, IsString, IsInt, Min, IsEnum, IsBoolean } from "class-validator";
 import { BusinessCategoryStatus } from "../../domain/enums/business-category-status.enum";
 
 export class UpdateBusinessCategoryDto {
@@ -13,6 +13,10 @@ export class UpdateBusinessCategoryDto {
   @IsOptional()
   @IsString()
   slug?: string;
+
+  @IsOptional()
+  @IsString()
+  parentId?: string | null;
 
   @IsOptional()
   @IsString()
@@ -34,4 +38,8 @@ export class UpdateBusinessCategoryDto {
   @IsOptional()
   @IsEnum(BusinessCategoryStatus)
   status?: BusinessCategoryStatus;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

@@ -13,6 +13,10 @@ export class BusinessCategoryOrmEntity {
   id: string;
 
   @Index()
+  @Column({ name: 'parent_id', type: 'varchar', length: 64, nullable: true })
+  parentId?: string | null;
+
+  @Index()
   @Column({ type: 'varchar', length: 150 })
   name: string;
 
@@ -23,6 +27,10 @@ export class BusinessCategoryOrmEntity {
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 150 })
   slug: string;
+
+  @Index()
+  @Column({ name: 'parent_id', type: 'varchar', length: 64, nullable: true })
+  parentId?: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 64, default: 'general' })
@@ -43,6 +51,9 @@ export class BusinessCategoryOrmEntity {
     default: BusinessCategoryStatus.ACTIVE,
   })
   status: BusinessCategoryStatus;
+
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
 
   @Column({ name: 'business_count', type: 'integer', default: 0 })
   businessCount: number;

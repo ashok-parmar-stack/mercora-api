@@ -16,7 +16,9 @@ export class BusinessCategoryMapper {
       (orm.status as BusinessCategoryStatus) || BusinessCategoryStatus.ACTIVE,
       orm.businessCount,
       orm.createdAt,
-      orm.updatedAt
+      orm.updatedAt,
+      orm.parentId,
+      orm.isActive !== undefined ? orm.isActive : orm.status === BusinessCategoryStatus.ACTIVE
     );
   }
 
@@ -29,8 +31,10 @@ export class BusinessCategoryMapper {
     orm.type = domain.type;
     orm.description = domain.description;
     orm.icon = domain.icon;
+    orm.parentId = domain.parentId;
     orm.displayOrder = domain.displayOrder;
     orm.status = domain.status;
+    orm.isActive = domain.isActiveStatus ?? (domain.status === BusinessCategoryStatus.ACTIVE);
     orm.businessCount = domain.businessCount;
     return orm;
   }

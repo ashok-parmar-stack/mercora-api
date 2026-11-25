@@ -7,6 +7,7 @@ import { BusinessCategoryRepository } from "./infrastructure/persistence/reposit
 // Use cases
 import { ListBusinessCategoriesUseCase } from "./application/use-cases/list-business-categories.use-case";
 import { GetBusinessCategoryUseCase } from "./application/use-cases/get-business-category.use-case";
+import { GetBusinessCategoryTreeUseCase } from "./application/use-cases/get-business-category-tree.use-case";
 import { CreateBusinessCategoryUseCase } from "./application/use-cases/create-business-category.use-case";
 import { UpdateBusinessCategoryUseCase } from "./application/use-cases/update-business-category.use-case";
 import { DeleteBusinessCategoryUseCase } from "./application/use-cases/delete-business-category.use-case";
@@ -28,6 +29,7 @@ import { AdminBusinessCategoryController } from "./presentation/controllers/admi
   providers: [
     ListBusinessCategoriesUseCase,
     GetBusinessCategoryUseCase,
+    GetBusinessCategoryTreeUseCase,
     CreateBusinessCategoryUseCase,
     UpdateBusinessCategoryUseCase,
     DeleteBusinessCategoryUseCase,
@@ -39,6 +41,7 @@ import { AdminBusinessCategoryController } from "./presentation/controllers/admi
   exports: [
     ListBusinessCategoriesUseCase,
     GetBusinessCategoryUseCase,
+    GetBusinessCategoryTreeUseCase,
     CreateBusinessCategoryUseCase,
     UpdateBusinessCategoryUseCase,
     DeleteBusinessCategoryUseCase,

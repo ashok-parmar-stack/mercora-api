@@ -13,10 +13,13 @@ export class BusinessCategoryEntity {
     public status: BusinessCategoryStatus = BusinessCategoryStatus.ACTIVE,
     public businessCount: number = 0,
     public readonly createdAt: Date = new Date(),
-    public updatedAt: Date = new Date()
+    public updatedAt: Date = new Date(),
+    public parentId?: string | null,
+    public isActiveStatus: boolean = true,
+    public subcategories?: BusinessCategoryEntity[]
   ) {}
 
   isActive(): boolean {
-    return this.status === BusinessCategoryStatus.ACTIVE;
+    return this.status === BusinessCategoryStatus.ACTIVE && this.isActiveStatus;
   }
 }

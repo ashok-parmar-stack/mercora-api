@@ -1,4 +1,4 @@
-import { Injectable, Inject, ConflictException } from "@nestjs/common";
+import { Injectable, Inject, ConflictException, NotFoundException } from "@nestjs/common";
 import {
   IBusinessCategoryRepository,
   BUSINESS_CATEGORY_REPOSITORY_TOKEN,
@@ -18,7 +18,7 @@ export class CreateBusinessCategoryUseCase {
   async execute(dto: CreateBusinessCategoryDto): Promise<BusinessCategoryEntity> {
     const slug = dto.slug || toSlug(dto.name);
     const code = (dto.code || toCode(dto.name)).toUpperCase();
-    const id = slug;
+    const id = dto.parentId ? `sub-${slug}` : slug;
 
     const existingSlug = await this.repo.findBySlug(slug);
     if (existingSlug) {
@@ -30,17 +30,31 @@ export class CreateBusinessCategoryUseCase {
       throw new ConflictException(`Business category with code '${code}' already exists`);
     }
 
+    if (dto.parentId) {
+      const parent = await this.repo.findById(dto.parentId);
+      if (!parent) {
+        throw new NotFoundException(`Parent category with ID '${dto.parentId}' does not exist`);
+      }
+    }
+
+    const isAct = dto.isActive !== undefined ? dto.isActive : (dto.status !== BusinessCategoryStatus.INACTIVE);
+    const status = isAct ? BusinessCategoryStatus.ACTIVE : BusinessCategoryStatus.INACTIVE;
+
     const entity = new BusinessCategoryEntity(
       id,
       dto.name,
       code,
       slug,
-      dto.type || slug,
+      dto.type || (dto.parentId ? 'subcategory' : slug),
       dto.description,
       dto.icon,
       dto.displayOrder ?? 0,
-      dto.status || BusinessCategoryStatus.ACTIVE,
-      0
+      status,
+      0,
+      new Date(),
+      new Date(),
+      dto.parentId || null,
+      isAct
     );
 
     return this.repo.save(entity);

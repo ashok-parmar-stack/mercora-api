@@ -1,6 +1,5 @@
-import { IsOptional, IsString, IsEnum, IsInt, Min } from "class-validator";
+import { IsOptional, IsString, IsInt, Min } from "class-validator";
 import { Type } from "class-transformer";
-import { BusinessCategoryStatus } from "../../domain/enums/business-category-status.enum";
 
 export class BusinessCategoryQueryDto {
   @IsOptional()
@@ -12,8 +11,12 @@ export class BusinessCategoryQueryDto {
   type?: string;
 
   @IsOptional()
-  @IsEnum(BusinessCategoryStatus)
-  status?: BusinessCategoryStatus;
+  @IsString()
+  parentId?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @Type(() => Number)

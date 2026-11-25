@@ -2,7 +2,10 @@ import { BusinessCategoryEntity } from "../entities/business-category.entity";
 import { BusinessCategoryStatus } from "../enums/business-category-status.enum";
 
 export interface BusinessCategoryFindOptions {
-  status?: BusinessCategoryStatus;
+  status?: BusinessCategoryStatus | string;
+  isActive?: boolean;
+  onlyRoot?: boolean;
+  parentId?: string | null | 'root' | 'all';
   query?: string;
   type?: string;
   limit?: number;
@@ -11,9 +14,12 @@ export interface BusinessCategoryFindOptions {
 
 export interface IBusinessCategoryRepository {
   findAll(options?: BusinessCategoryFindOptions): Promise<{ data: BusinessCategoryEntity[]; total: number }>;
+  findTree(): Promise<BusinessCategoryEntity[]>;
   findById(id: string): Promise<BusinessCategoryEntity | null>;
   findBySlug(slug: string): Promise<BusinessCategoryEntity | null>;
   findByCode(code: string): Promise<BusinessCategoryEntity | null>;
+  hasChildren(id: string): Promise<boolean>;
+  hasAssignedBusinesses(id: string): Promise<boolean>;
   save(entity: BusinessCategoryEntity): Promise<BusinessCategoryEntity>;
   delete(id: string): Promise<void>;
   count(): Promise<number>;
