@@ -1,4 +1,5 @@
-import { ConflictException } from '@nestjs/common';
+/// <reference types="jest" />
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { CreateBusinessUseCase } from '../../../src/modules/businesses/application/use-cases/create-business/create-business.use-case';
 import { CustomerBusinessController } from '../../../src/modules/businesses/presentation/controllers/customer-business.controller';
 
@@ -29,7 +30,7 @@ describe('Businesses Unit Tests', () => {
       };
       const useCase = new CreateBusinessUseCase(repo);
 
-      const result = await useCase.execute({
+      const result: any = await useCase.execute({
         name: 'Apex Steel & Alloys!',
         category: 'Metals',
         city: 'Surat',
@@ -44,14 +45,24 @@ describe('Businesses Unit Tests', () => {
   });
 
   describe('CustomerBusinessController', () => {
-    it('BE-BUS-002: delegates update without passing authenticated userId (documents IDOR gap BUG-001)', async () => {
+    it('BE-BUS-002: blocks customer from updating another user business (ForbiddenException) and allows owner', async () => {
       const createUseCase: any = { execute: jest.fn() };
       const updateUseCase: any = { execute: jest.fn().mockResolvedValue({ id: 'biz-1' }) };
-      const controller = new CustomerBusinessController(createUseCase, updateUseCase);
+      const repo: any = {
+        findById: jest.fn().mockResolvedValue({ id: 'biz-1', email: 'owner@company.com' }),
+      };
+      const controller = new CustomerBusinessController(createUseCase, updateUseCase, repo);
 
-      // CustomerBusinessController.update only accepts (id, dto) and does not check ownership
-      expect(controller.update.length).toBe(2);
-      await controller.update('biz-1', { name: 'Updated' } as any);
+      await expect(
+        controller.update('biz-1', { name: 'Hijack' } as any, {
+          user: { userId: 'u-2', email: 'other@company.com', role: 'CUSTOMER' },
+        }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(updateUseCase.execute).not.toHaveBeenCalled();
+
+      await controller.update('biz-1', { name: 'Updated' } as any, {
+        user: { userId: 'u-1', email: 'owner@company.com', role: 'CUSTOMER' },
+      });
       expect(updateUseCase.execute).toHaveBeenCalledWith('biz-1', { name: 'Updated' });
     });
   });

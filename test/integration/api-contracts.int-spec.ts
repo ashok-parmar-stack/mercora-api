@@ -56,6 +56,8 @@ describe('Mercora API HTTP Contracts (Integration / Supertest)', () => {
   };
 
   const mockBusinessRepo = {
+    findById: jest.fn(async (id: string) => (id === 'biz-1' ? { id: 'biz-1', name: 'Apex Steel' } : null)),
+    findBySlug: jest.fn().mockResolvedValue(null),
     findFeatured: jest.fn().mockResolvedValue([]),
     getDirectoryFacets: jest.fn().mockResolvedValue({ totalBusinesses: 1, locations: [], cities: [] }),
   };

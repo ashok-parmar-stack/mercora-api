@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { rateLimitMiddleware } from '../../../src/common/middleware/rate-limit.middleware';
 
 describe('rateLimitMiddleware (Unit)', () => {
@@ -57,11 +58,10 @@ describe('rateLimitMiddleware (Unit)', () => {
     expect(blocked.res.body.statusCode).toBe(429);
   });
 
-  it('BE-SEC-001: documents BUG-009 (/api/auth/forgot-password is not rate-limited)', () => {
+  it('BE-SEC-001: rate-limits /api/auth/forgot-password as well as /api/v1/auth/forgot-password', () => {
     const ctx = createReqRes('POST', '/api/auth/forgot-password', '192.168.99.2');
     rateLimitMiddleware(ctx.req, ctx.res, ctx.next);
     expect(ctx.next).toHaveBeenCalledTimes(1);
-    // Unlike /api/v1/auth/forgot-password, /api/auth/forgot-password has no X-RateLimit-Limit header
-    expect(ctx.headers['X-RateLimit-Limit']).toBeUndefined();
+    expect(ctx.headers['X-RateLimit-Limit']).toBe('10');
   });
 });

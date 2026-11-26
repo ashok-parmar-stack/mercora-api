@@ -17,8 +17,11 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
   { prefix: '/api/v1/auth/register', limit: 10, windowMs: 60_000 },
   { prefix: '/api/auth/register', limit: 10, windowMs: 60_000 },
   { prefix: '/api/v1/auth/forgot-password', limit: 10, windowMs: 60_000 },
+  { prefix: '/api/auth/forgot-password', limit: 10, windowMs: 60_000 },
   { prefix: '/api/v1/auth/reset-password', limit: 10, windowMs: 60_000 },
+  { prefix: '/api/auth/reset-password', limit: 10, windowMs: 60_000 },
   { prefix: '/api/v1/auth/resend-verification', limit: 10, windowMs: 60_000 },
+  { prefix: '/api/auth/resend-verification', limit: 10, windowMs: 60_000 },
   { prefix: '/api/businesses/enquiries', limit: 20, windowMs: 60_000 },
   { prefix: '/api/storage/upload', limit: 30, windowMs: 60_000 },
 ];

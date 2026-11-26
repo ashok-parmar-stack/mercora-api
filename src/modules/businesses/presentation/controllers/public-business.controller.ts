@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Post, Body, Req, HttpCode, HttpStatus, Inject } from "@nestjs/common";
+import { Controller, Get, Param, Query, Post, Body, Req, HttpCode, HttpStatus, Inject, NotFoundException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -76,6 +76,14 @@ export class PublicBusinessController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Submit commercial inquiry / RFQ directly to a business" })
   async submitEnquiry(@Body() dto: CreateBusinessEnquiryDto, @Req() req: Request) {
+    const targetId = dto.businessId.trim();
+    const business =
+      (await this.businessRepository.findById(targetId)) ||
+      (await this.businessRepository.findBySlug(targetId));
+    if (!business) {
+      throw new NotFoundException(API_MESSAGES.businesses.notFound);
+    }
+
     const saved = await this.enquiryRepo.save(
       this.enquiryRepo.create({
         businessId: dto.businessId.trim(),
