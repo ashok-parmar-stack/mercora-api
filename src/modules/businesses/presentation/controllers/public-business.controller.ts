@@ -54,6 +54,14 @@ export class PublicBusinessController {
     return featured.map((b) => BusinessResponseDto.fromDomain(b));
   }
 
+  @Get("facets")
+  @Public()
+  @ApiOperation({ summary: "Get live dynamic counts for directory categories, locations, and verification status" })
+  @ApiResponse({ status: 200, description: "Dynamic directory filter facets" })
+  async getFacets(@Query() query: BusinessQueryDto) {
+    return this.businessRepository.getDirectoryFacets(query);
+  }
+
   @Get(":slug")
   @Public()
   @ApiOperation({ summary: "Get complete business profile and catalog by unique slug or ID" })

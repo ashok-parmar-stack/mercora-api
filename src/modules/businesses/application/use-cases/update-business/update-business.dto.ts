@@ -1,5 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsNumber } from "class-validator";
-import { BusinessType } from "../../../domain/enums/business-type.enum";
+import { IsString, IsOptional, IsNumber, IsArray } from "class-validator";
 
 export class UpdateBusinessDto {
   @IsOptional()
@@ -13,6 +12,10 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsString()
   businessType?: string;
+
+  @IsOptional()
+  @IsArray()
+  categoryIds?: string[];
 
   @IsOptional()
   @IsString()

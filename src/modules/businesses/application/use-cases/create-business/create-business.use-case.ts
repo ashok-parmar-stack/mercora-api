@@ -85,7 +85,7 @@ export class CreateBusinessUseCase {
       new Date()
     );
 
-    const saved = await this.businessRepository.save(business);
+    const saved = await this.businessRepository.save(business, dto.categoryIds);
     return BusinessResponseDto.fromDomain(saved);
   }
 }

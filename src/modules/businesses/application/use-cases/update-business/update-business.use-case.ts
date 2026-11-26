@@ -31,7 +31,7 @@ export class UpdateBusinessUseCase {
     if (dto.website) existing.website = dto.website;
     if (dto.address) existing.address = dto.address;
 
-    const saved = await this.businessRepository.save(existing);
+    const saved = await this.businessRepository.save(existing, dto.categoryIds);
     return BusinessResponseDto.fromDomain(saved);
   }
 }
