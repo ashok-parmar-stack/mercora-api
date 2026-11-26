@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsBoolean, IsIn, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsIn, IsInt, Min, Max } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class BusinessQueryDto {
@@ -45,5 +45,6 @@ export class BusinessQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 12;
 }

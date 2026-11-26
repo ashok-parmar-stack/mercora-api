@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { EmailTemplateService } from './services/email-template.service';
 import { Roles, ADMIN_ROLES } from '../../common';
@@ -33,5 +33,28 @@ export class EmailController {
       })),
       total: list.length,
     };
+  }
+
+  @Patch('bulk-status')
+  @ApiOperation({ summary: 'Bulk update email template status' })
+  async bulkUpdateStatus(
+    @Body() body: { ids: string[]; status: 'ACTIVE' | 'INACTIVE' },
+  ) {
+    const res = await this.templateService.bulkUpdateStatus(body.ids || [], body.status || 'ACTIVE');
+    return { success: true, ...res };
+  }
+
+  @Post('bulk-delete')
+  @ApiOperation({ summary: 'Bulk delete email templates' })
+  async bulkDelete(@Body() body: { ids: string[] }) {
+    const res = await this.templateService.bulkDeleteTemplates(body.ids || []);
+    return { success: true, ...res };
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete an email template' })
+  async deleteTemplate(@Param('id') id: string) {
+    const res = await this.templateService.deleteTemplate(id);
+    return { success: true, ...res };
   }
 }

@@ -33,13 +33,14 @@ import { AdminBusinessController } from "./presentation/controllers/admin-busine
     UpdateBusinessUseCase,
     DeleteBusinessUseCase,
     ChangeBusinessStatusUseCase,
+    TypeOrmBusinessRepository,
     {
       provide: BUSINESS_REPOSITORY_TOKEN,
-      useClass: TypeOrmBusinessRepository,
+      useExisting: TypeOrmBusinessRepository,
     },
     {
       provide: IBusinessRepositoryToken,
-      useClass: TypeOrmBusinessRepository,
+      useExisting: TypeOrmBusinessRepository,
     },
   ],
   exports: [

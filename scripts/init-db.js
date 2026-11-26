@@ -27,21 +27,20 @@ function loadEnvFile(envFilePath) {
 const envArg = process.argv.find((arg) => arg.startsWith('--env='));
 const isProdArg = process.argv.some((arg) => ['prod', 'production', '--production', 'neon'].includes(arg.toLowerCase()));
 const isDevArg = process.argv.some((arg) => ['dev', 'development', '--dev', '--development'].includes(arg.toLowerCase()));
-const isLocalArg = process.argv.some((arg) => ['local', '--local'].includes(arg.toLowerCase()));
+const isConfirmProd = process.argv.includes('--confirm-production');
 
-let targetEnvFile = '.env.production';
+let targetEnvFile = '.env';
 if (envArg) {
   targetEnvFile = envArg.split('=')[1];
-} else if (isLocalArg) {
-  targetEnvFile = '.env';
 } else if (isDevArg) {
   targetEnvFile = fs.existsSync(path.join(__dirname, '../.env.development')) ? '.env.development' : '.env';
 } else if (isProdArg) {
   targetEnvFile = '.env.production';
-} else if (fs.existsSync(path.join(__dirname, '../.env.production'))) {
-  targetEnvFile = '.env.production';
-} else {
-  targetEnvFile = '.env';
+}
+
+if ((isProdArg || targetEnvFile.includes('production')) && !isConfirmProd) {
+  console.error('❌ Refusing to run destructive init-db against production without --confirm-production flag.');
+  process.exit(1);
 }
 
 const resolvedPath = path.isAbsolute(targetEnvFile) ? targetEnvFile : path.join(__dirname, '..', targetEnvFile);

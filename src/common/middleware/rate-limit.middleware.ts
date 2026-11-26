@@ -30,11 +30,11 @@ const buckets = new Map<string, BucketEntry>();
 let lastSweep = Date.now();
 
 function getClientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim();
+  // Prefer Express-resolved req.ip (respects configured trust proxy) over raw spoofable headers
+  if (req.ip) {
+    return req.ip;
   }
-  return req.ip || req.socket?.remoteAddress || 'unknown';
+  return req.socket?.remoteAddress || 'unknown';
 }
 
 function sweepExpired(now: number): void {

@@ -22,8 +22,11 @@ export class CustomerBusinessController {
 
   @Post()
   @ApiOperation({ summary: "Register new business vendor profile" })
-  async create(@Body() dto: CreateBusinessDto) {
-    return this.createBusinessUseCase.execute(dto);
+  async create(
+    @Body() dto: CreateBusinessDto,
+    @Req() req: { user?: { userId?: string } }
+  ) {
+    return this.createBusinessUseCase.execute(dto, req?.user?.userId);
   }
 
   @Put(":id")
@@ -42,7 +45,11 @@ export class CustomerBusinessController {
       if (!existing) {
         throw new NotFoundException(API_MESSAGES.businesses.notFound);
       }
-      if (!user?.email || existing.email?.toLowerCase() !== user.email.toLowerCase()) {
+      const ownsByUserId = Boolean(existing.ownerUserId && user?.userId && existing.ownerUserId === user.userId);
+      const ownsByLegacyEmail = Boolean(
+        !existing.ownerUserId && user?.email && existing.email?.toLowerCase() === user.email.toLowerCase()
+      );
+      if (!ownsByUserId && !ownsByLegacyEmail) {
         throw new ForbiddenException("You do not have permission to update this business.");
       }
       delete dto.verificationStatus;

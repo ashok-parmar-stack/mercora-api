@@ -31,19 +31,13 @@ const isProdArg = process.argv.some((arg) => ['prod', 'production', '--productio
 const isDevArg = process.argv.some((arg) => ['dev', 'development', '--dev', '--development'].includes(arg.toLowerCase()));
 const isLocalArg = process.argv.some((arg) => ['local', '--local'].includes(arg.toLowerCase()));
 
-let targetEnvFile = '.env.production';
+let targetEnvFile = '.env';
 if (envArg) {
   targetEnvFile = envArg.split('=')[1];
-} else if (isLocalArg) {
-  targetEnvFile = '.env';
 } else if (isDevArg) {
   targetEnvFile = fs.existsSync(path.join(__dirname, '../.env.development')) ? '.env.development' : '.env';
 } else if (isProdArg) {
   targetEnvFile = '.env.production';
-} else if (fs.existsSync(path.join(__dirname, '../.env.production'))) {
-  targetEnvFile = '.env.production';
-} else {
-  targetEnvFile = '.env';
 }
 
 const resolvedPath = path.isAbsolute(targetEnvFile) ? targetEnvFile : path.join(__dirname, '..', targetEnvFile);
