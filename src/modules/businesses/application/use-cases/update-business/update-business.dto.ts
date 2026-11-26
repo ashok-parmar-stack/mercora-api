@@ -48,4 +48,15 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsArray()
+  contacts?: Array<{
+    id?: string;
+    role: string;
+    name?: string;
+    phone: string;
+    email?: string;
+    isPrimary?: boolean;
+  }>;
 }

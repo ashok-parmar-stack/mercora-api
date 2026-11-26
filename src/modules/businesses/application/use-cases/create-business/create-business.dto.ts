@@ -146,4 +146,15 @@ export class CreateBusinessDto {
     imageUrl: string;
     description?: string;
   }>;
+
+  @IsOptional()
+  @IsArray()
+  contacts?: Array<{
+    id?: string;
+    role: string;
+    name?: string;
+    phone: string;
+    email?: string;
+    isPrimary?: boolean;
+  }>;
 }

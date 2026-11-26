@@ -97,6 +97,16 @@ export class BusinessOrmEntity {
     description?: string;
   }>;
 
+  @Column('simple-json', { nullable: true })
+  contacts: Array<{
+    id: string;
+    role: string;
+    name?: string;
+    phone: string;
+    email?: string;
+    isPrimary?: boolean;
+  }>;
+
   @CreateTimestampColumn({ name: 'created_at' })
   created_at: Date;
 

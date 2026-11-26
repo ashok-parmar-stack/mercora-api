@@ -10,6 +10,15 @@ export interface BusinessProductItem {
   description?: string;
 }
 
+export interface BusinessContactItem {
+  id: string;
+  role: string; // e.g., 'Owner', 'Seller', 'Marketing', 'IT', 'Support'
+  name?: string;
+  phone: string;
+  email?: string;
+  isPrimary?: boolean;
+}
+
 export class BusinessEntity {
   constructor(
     public readonly id: string,
@@ -37,7 +46,8 @@ export class BusinessEntity {
     public products: BusinessProductItem[] = [],
     public logoUrl?: string,
     public createdAt?: Date,
-    public updatedAt?: Date
+    public updatedAt?: Date,
+    public contacts: BusinessContactItem[] = []
   ) {}
 
   public get isVerified(): boolean {

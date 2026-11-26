@@ -42,6 +42,31 @@ describe('Businesses Unit Tests', () => {
       expect(result.slug).toBe('apex-steel-alloys');
       expect(result.name).toBe('Apex Steel & Alloys!');
     });
+
+    it('BE-BUS-003: normalizes multiple role contacts and syncs primary phone', async () => {
+      const repo: any = {
+        findBySlug: jest.fn().mockResolvedValue(null),
+        save: jest.fn(async (entity) => entity),
+      };
+      const useCase = new CreateBusinessUseCase(repo);
+
+      const result: any = await useCase.execute({
+        name: 'Multi Contact Co',
+        category: 'Machinery',
+        city: 'Pune',
+        state: 'Maharashtra',
+        contacts: [
+          { role: 'Owner', name: 'Asha', phone: '+91 90000 11111' },
+          { role: 'Seller', name: 'Raj', phone: '+91 90000 22222', isPrimary: true },
+          { role: 'Marketing', phone: '+91 90000 33333' },
+          { role: 'IT', phone: '+91 90000 44444' },
+        ],
+      } as any);
+
+      expect(result.contacts).toHaveLength(4);
+      expect(result.phone).toBe('+91 90000 22222');
+      expect(result.contacts[1].isPrimary).toBe(true);
+    });
   });
 
   describe('CustomerBusinessController', () => {

@@ -30,6 +30,26 @@ export class UpdateBusinessUseCase {
     if (dto.email) existing.email = dto.email;
     if (dto.website) existing.website = dto.website;
     if (dto.address) existing.address = dto.address;
+    if (Array.isArray(dto.contacts)) {
+      const normalized = dto.contacts
+        .filter((c) => c && typeof c.phone === "string" && c.phone.trim().length > 0)
+        .map((c, idx) => ({
+          id: c.id?.trim() || `cnt-${Date.now()}-${idx}`,
+          role: (c.role || "Seller").trim(),
+          name: c.name?.trim() || undefined,
+          phone: c.phone.trim(),
+          email: c.email?.trim() || undefined,
+          isPrimary: Boolean(c.isPrimary),
+        }));
+      if (normalized.length > 0 && !normalized.some((c) => c.isPrimary)) {
+        normalized[0].isPrimary = true;
+      }
+      existing.contacts = normalized;
+      const primary = normalized.find((c) => c.isPrimary) || normalized[0];
+      if (primary && !dto.phone) {
+        existing.phone = primary.phone;
+      }
+    }
 
     const saved = await this.businessRepository.save(existing, dto.categoryIds);
     return BusinessResponseDto.fromDomain(saved);

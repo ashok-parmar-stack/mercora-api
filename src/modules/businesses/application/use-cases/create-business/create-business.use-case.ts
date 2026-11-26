@@ -4,7 +4,7 @@ import {
   BUSINESS_REPOSITORY_TOKEN,
 } from "../../../domain/repositories/business.repository.interface";
 import { CreateBusinessDto } from "./create-business.dto";
-import { BusinessEntity } from "../../../domain/entities/business.entity";
+import { BusinessEntity, BusinessContactItem } from "../../../domain/entities/business.entity";
 import { BusinessRating } from "../../../domain/value-objects/business-rating.vo";
 import { BusinessResponseDto } from "../../dto/business-response.dto";
 import { VerificationStatus } from "../../../domain/enums/verification-status.enum";
@@ -46,9 +46,25 @@ export class CreateBusinessUseCase {
       dto.verification_status ||
       dto.tier ||
       VerificationStatus.VERIFIED) as VerificationStatus;
+    const rawContacts = Array.isArray(dto.contacts) ? dto.contacts : [];
+    const contacts: BusinessContactItem[] = rawContacts
+      .filter((c) => c && typeof c.phone === "string" && c.phone.trim().length > 0)
+      .map((c, idx) => ({
+        id: c.id?.trim() || `cnt-${Date.now()}-${idx}`,
+        role: (c.role || "Seller").trim(),
+        name: c.name?.trim() || undefined,
+        phone: c.phone.trim(),
+        email: c.email?.trim() || undefined,
+        isPrimary: Boolean(c.isPrimary),
+      }));
+    if (contacts.length > 0 && !contacts.some((c) => c.isPrimary)) {
+      contacts[0].isPrimary = true;
+    }
+    const primaryContact = contacts.find((c) => c.isPrimary) || contacts[0];
+
     const pincode = dto.pincode || "380001";
-    const phone = dto.phone || "+91 98765 00000";
-    const email = dto.email || `info@${slug}.example.com`;
+    const phone = dto.phone || primaryContact?.phone || "+91 98765 00000";
+    const email = dto.email || primaryContact?.email || `info@${slug}.example.com`;
     const website = dto.website || `www.${slug}.com`;
     const address = dto.address || `${dto.city}, ${dto.state}`;
     const gstin = dto.gstin || "24AAAAA0000A1Z5";
@@ -82,7 +98,8 @@ export class CreateBusinessUseCase {
       products,
       logoUrl,
       new Date(),
-      new Date()
+      new Date(),
+      contacts
     );
 
     const saved = await this.businessRepository.save(business, dto.categoryIds);

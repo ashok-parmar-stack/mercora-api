@@ -29,6 +29,7 @@ export class BusinessResponseDto {
       gstin: entity.gstin,
       cin: entity.cin,
       products: entity.products,
+      contacts: entity.contacts || [],
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };
