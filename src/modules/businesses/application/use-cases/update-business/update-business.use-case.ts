@@ -25,7 +25,13 @@ export class UpdateBusinessUseCase {
     if (dto.businessType) existing.businessType = dto.businessType;
     if (dto.city) existing.city = dto.city;
     if (dto.state) existing.state = dto.state;
-    if (dto.description) existing.description = dto.description;
+    if (dto.pincode !== undefined) existing.pincode = dto.pincode;
+    if (dto.description !== undefined) existing.description = dto.description;
+    if (dto.fullOverview !== undefined) existing.fullOverview = dto.fullOverview;
+    if (dto.establishedYear !== undefined) existing.establishedYear = dto.establishedYear;
+    if (dto.employeeCount !== undefined) existing.employeeCount = dto.employeeCount;
+    if (dto.logoUrl !== undefined) existing.logoUrl = dto.logoUrl;
+    if (dto.imageUrl !== undefined) existing.imageUrl = dto.imageUrl;
     if (dto.phone) existing.phone = dto.phone;
     if (dto.email) existing.email = dto.email;
     if (dto.website) existing.website = dto.website;

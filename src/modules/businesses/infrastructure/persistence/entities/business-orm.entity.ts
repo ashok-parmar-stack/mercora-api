@@ -19,7 +19,7 @@ export class BusinessOrmEntity {
   @Index()
   slug: string;
 
-  @Column('varchar', { length: 255, nullable: true })
+  @Column('text', { nullable: true })
   logo_url: string;
 
   @Column('text')

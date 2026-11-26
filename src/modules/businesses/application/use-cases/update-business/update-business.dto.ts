@@ -31,8 +31,28 @@ export class UpdateBusinessDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  fullOverview?: string;
+
+  @IsOptional()
   @IsNumber()
   establishedYear?: number;
+
+  @IsOptional()
+  @IsString()
+  employeeCount?: string;
+
+  @IsOptional()
+  @IsString()
+  pincode?: string;
+
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 
   @IsOptional()
   @IsString()
