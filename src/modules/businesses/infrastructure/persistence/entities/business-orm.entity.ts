@@ -85,6 +85,9 @@ export class BusinessOrmEntity {
   @Column('varchar', { length: 50, nullable: true })
   gstin: string;
 
+  @Column('varchar', { length: 20, nullable: true })
+  pan: string;
+
   @Column('varchar', { length: 50, nullable: true })
   cin: string;
 

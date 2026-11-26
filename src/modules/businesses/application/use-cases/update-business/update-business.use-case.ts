@@ -30,6 +30,9 @@ export class UpdateBusinessUseCase {
     if (dto.email) existing.email = dto.email;
     if (dto.website) existing.website = dto.website;
     if (dto.address) existing.address = dto.address;
+    if (dto.gstin !== undefined) existing.gstin = dto.gstin;
+    if (dto.pan !== undefined) existing.pan = dto.pan;
+    if (dto.cin !== undefined) existing.cin = dto.cin;
     if (Array.isArray(dto.contacts)) {
       const normalized = dto.contacts
         .filter((c) => c && typeof c.phone === "string" && c.phone.trim().length > 0)

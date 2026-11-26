@@ -27,6 +27,7 @@ export class BusinessResponseDto {
       website: entity.website,
       address: entity.address,
       gstin: entity.gstin,
+      pan: entity.pan,
       cin: entity.cin,
       products: entity.products,
       contacts: entity.contacts || [],

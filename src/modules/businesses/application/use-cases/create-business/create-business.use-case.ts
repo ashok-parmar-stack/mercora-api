@@ -68,6 +68,7 @@ export class CreateBusinessUseCase {
     const website = dto.website || `www.${slug}.com`;
     const address = dto.address || `${dto.city}, ${dto.state}`;
     const gstin = dto.gstin || "24AAAAA0000A1Z5";
+    const pan = dto.pan || (gstin.length === 15 ? gstin.slice(2, 12) : "");
     const cin = dto.cin || "U00000GJ2025PTC000000";
     const id = dto.id || `biz-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const products = dto.products || [];
@@ -99,7 +100,8 @@ export class CreateBusinessUseCase {
       logoUrl,
       new Date(),
       new Date(),
-      contacts
+      contacts,
+      pan
     );
 
     const saved = await this.businessRepository.save(business, dto.categoryIds);

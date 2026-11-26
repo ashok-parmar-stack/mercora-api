@@ -33,7 +33,8 @@ export class BusinessMapper {
       orm.logo_url,
       orm.created_at,
       orm.updated_at,
-      orm.contacts || []
+      orm.contacts || [],
+      orm.pan
     );
   }
 
@@ -67,6 +68,7 @@ export class BusinessMapper {
     orm.website = domain.website;
     orm.address = domain.address;
     orm.gstin = domain.gstin;
+    orm.pan = domain.pan || '';
     orm.cin = domain.cin;
     orm.products = domain.products;
     return orm;

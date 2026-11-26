@@ -34,6 +34,9 @@ type FacetDimension = "category" | "location" | "state" | "city" | "businessType
 @Injectable()
 export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleInit {
   private readonly logger = new Logger(TypeOrmBusinessRepository.name);
+  private categoriesCache: CategoryRowForFacet[] | null = null;
+  private categoriesCacheExpiresAt = 0;
+  private readonly facetsCache = new Map<string, { value: BusinessFacetsResult; expiresAt: number }>();
 
   constructor(
     @InjectRepository(BusinessOrmEntity)
@@ -63,6 +66,10 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
   }
 
   private async loadCategoriesMetadata(): Promise<CategoryRowForFacet[]> {
+    const now = Date.now();
+    if (this.categoriesCache && now < this.categoriesCacheExpiresAt) {
+      return this.categoriesCache;
+    }
     try {
       const rows = await this.dataSource.query(
         `SELECT id, name, slug, code, parent_id AS "parentId", icon,
@@ -71,7 +78,10 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
          WHERE is_active = TRUE
          ORDER BY display_order ASC, name ASC`,
       );
-      return Array.isArray(rows) ? rows : [];
+      const parsed = Array.isArray(rows) ? rows : [];
+      this.categoriesCache = parsed;
+      this.categoriesCacheExpiresAt = now + 30_000;
+      return parsed;
     } catch {
       return [];
     }
@@ -204,6 +214,21 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
   }
 
   async getDirectoryFacets(options: BusinessFacetsQuery = {}): Promise<BusinessFacetsResult> {
+    const cacheKey = JSON.stringify({
+      q: options.query || "",
+      c: options.category || "",
+      l: options.location || "",
+      s: options.state || "",
+      ci: options.city || "",
+      bt: options.businessType || "",
+      v: Boolean(options.verifiedOnly),
+    });
+    const now = Date.now();
+    const cached = this.facetsCache.get(cacheKey);
+    if (cached && now < cached.expiresAt) {
+      return cached.value;
+    }
+
     const categories = await this.loadCategoriesMetadata();
 
     const bizForCategoriesQb = this.ormRepository
@@ -277,7 +302,7 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
     const totalBusinesses = Number(verificationRow?.totalBusinesses) || 0;
     const verifiedCount = Number(verificationRow?.verifiedCount) || 0;
 
-    return {
+    const result: BusinessFacetsResult = {
       totalBusinesses,
       verifiedCount,
       unverifiedCount: Math.max(0, totalBusinesses - verifiedCount),
@@ -305,6 +330,13 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
           count: Number(row.count) || 0,
         })),
     };
+
+    if (this.facetsCache.size >= 50) {
+      const oldestKey = this.facetsCache.keys().next().value;
+      if (oldestKey) this.facetsCache.delete(oldestKey);
+    }
+    this.facetsCache.set(cacheKey, { value: result, expiresAt: Date.now() + 20_000 });
+    return result;
   }
 
   async findById(id: string): Promise<BusinessEntity | null> {

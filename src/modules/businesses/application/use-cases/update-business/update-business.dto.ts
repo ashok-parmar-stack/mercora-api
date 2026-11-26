@@ -47,6 +47,18 @@ export class UpdateBusinessDto {
 
   @IsOptional()
   @IsString()
+  gstin?: string;
+
+  @IsOptional()
+  @IsString()
+  pan?: string;
+
+  @IsOptional()
+  @IsString()
+  cin?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
 
   @IsOptional()

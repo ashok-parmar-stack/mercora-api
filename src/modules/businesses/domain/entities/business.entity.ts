@@ -47,7 +47,8 @@ export class BusinessEntity {
     public logoUrl?: string,
     public createdAt?: Date,
     public updatedAt?: Date,
-    public contacts: BusinessContactItem[] = []
+    public contacts: BusinessContactItem[] = [],
+    public pan?: string
   ) {}
 
   public get isVerified(): boolean {

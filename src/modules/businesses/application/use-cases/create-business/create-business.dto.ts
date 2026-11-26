@@ -131,6 +131,10 @@ export class CreateBusinessDto {
 
   @IsOptional()
   @IsString()
+  pan?: string;
+
+  @IsOptional()
+  @IsString()
   cin?: string;
 
   @IsOptional()
