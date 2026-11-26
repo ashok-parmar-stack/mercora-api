@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -122,6 +123,19 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User profile with active session' })
   async getMe(@CurrentUser() user: any) {
     return this.authService.getMe(user.id, user.sessionId);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update Current Authenticated User Profile',
+  })
+  @ApiResponse({ status: 200, description: 'User profile updated' })
+  async updateMe(
+    @CurrentUser() user: any,
+    @Body() body: { name?: string; phone?: string },
+  ) {
+    return this.authService.updateMe(user.id, body);
   }
 
   @Public()

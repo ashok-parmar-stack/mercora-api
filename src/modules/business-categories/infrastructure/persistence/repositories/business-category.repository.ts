@@ -19,6 +19,9 @@ import {
 @Injectable()
 export class BusinessCategoryRepository implements IBusinessCategoryRepository, OnModuleInit {
   private readonly logger = new Logger(BusinessCategoryRepository.name);
+  private cachedCounts: Map<string, number> | null = null;
+  private cachedCountsAt = 0;
+  private static readonly COUNTS_CACHE_TTL_MS = 60_000;
 
   constructor(
     @InjectRepository(BusinessCategoryOrmEntity)
@@ -27,6 +30,9 @@ export class BusinessCategoryRepository implements IBusinessCategoryRepository, 
   ) {}
 
   async onModuleInit(): Promise<void> {
+    if (process.env.SKIP_STARTUP_CATEGORY_REPAIR === "true") {
+      return;
+    }
     await this.repairHierarchyAndAssignments();
   }
 
@@ -104,22 +110,29 @@ export class BusinessCategoryRepository implements IBusinessCategoryRepository, 
   ): Promise<BusinessCategoryEntity[]> {
     if (!entities.length) return entities;
     try {
-      const [allCategories, businesses, assignments] = await Promise.all([
-        this.dataSource.query(
-          `SELECT id, name, slug, code, parent_id AS "parentId" FROM business_categories`,
-        ),
-        this.dataSource.query(
-          `SELECT id, business_type AS "businessType" FROM directory_businesses`,
-        ),
-        this.dataSource.query(
-          `SELECT business_id AS "businessId", category_id AS "categoryId" FROM business_category_assignments`,
-        ),
-      ]);
+      const now = Date.now();
+      let counts = this.cachedCounts;
+      if (!counts || now - this.cachedCountsAt > BusinessCategoryRepository.COUNTS_CACHE_TTL_MS) {
+        const [allCategories, businesses, assignments] = await Promise.all([
+          this.dataSource.query(
+            `SELECT id, name, slug, code, parent_id AS "parentId" FROM business_categories`,
+          ),
+          this.dataSource.query(
+            `SELECT id, business_type AS "businessType" FROM directory_businesses`,
+          ),
+          this.dataSource.query(
+            `SELECT business_id AS "businessId", category_id AS "categoryId" FROM business_category_assignments`,
+          ),
+        ]);
 
-      const counts = computeLiveCategoryCounts(businesses, assignments, allCategories);
+        counts = computeLiveCategoryCounts(businesses, assignments, allCategories);
+        this.cachedCounts = counts;
+        this.cachedCountsAt = now;
+      }
+
       const applyCounts = (node: BusinessCategoryEntity) => {
-        if (counts.has(node.id)) {
-          node.businessCount = counts.get(node.id)!;
+        if (counts!.has(node.id)) {
+          node.businessCount = counts!.get(node.id)!;
         }
         if (node.subcategories?.length) {
           node.subcategories.forEach(applyCounts);

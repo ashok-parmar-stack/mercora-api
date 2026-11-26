@@ -91,6 +91,10 @@ export class BusinessOrmEntity {
   @Column('varchar', { length: 50, nullable: true })
   cin: string;
 
+  @Index()
+  @Column('varchar', { length: 64, nullable: true })
+  owner_user_id: string | null;
+
   @Column('simple-json', { nullable: true })
   products: Array<{
     id: string;

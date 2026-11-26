@@ -1,8 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { EmailTemplateEntity } from '../../../database/entities/email-template.entity';
+import { StatusEntity } from '../../../database/entities/status.entity';
 import { EmailContext } from '../interfaces/email.interface';
 import { SYSTEM_EMAIL_TEMPLATES } from '../templates/default-templates';
 
@@ -89,6 +90,35 @@ export class EmailTemplateService implements OnModuleInit {
       updatedAt: new Date(),
       deletedAt: null,
     } as EmailTemplateEntity;
+  }
+
+  async deleteTemplate(id: string): Promise<{ deleted: number }> {
+    const existing = await this.templateRepo.findOne({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Email template ${id} not found`);
+    }
+    await this.templateRepo.softDelete(id);
+    return { deleted: 1 };
+  }
+
+  async bulkDeleteTemplates(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids.length) return { deleted: 0 };
+    const result = await this.templateRepo.softDelete({ id: In(ids) });
+    return { deleted: result.affected || 0 };
+  }
+
+  async bulkUpdateStatus(ids: string[], targetStatus: 'ACTIVE' | 'INACTIVE'): Promise<{ updated: number }> {
+    if (!ids.length) return { updated: 0 };
+    const statusRepo = this.templateRepo.manager.getRepository(StatusEntity);
+    const statusEntity = await statusRepo.findOne({ where: { code: targetStatus } });
+    if (!statusEntity) {
+      return { updated: 0 };
+    }
+    const result = await this.templateRepo.update(
+      { id: In(ids) },
+      { statusId: statusEntity.id },
+    );
+    return { updated: result.affected || 0 };
   }
 
   /**

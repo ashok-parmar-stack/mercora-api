@@ -54,11 +54,8 @@ function loadEnvFile(envFilePath: string) {
   }
 }
 
-// Auto-detect environment file
-const envFile = process.env.ENV_FILE ||
-  (fs.existsSync(path.resolve(__dirname, '../../.env.production'))
-    ? path.resolve(__dirname, '../../.env.production')
-    : path.resolve(__dirname, '../../.env'));
+// Resolve environment file (never auto-target .env.production unless ENV_FILE is explicitly set)
+const envFile = process.env.ENV_FILE || path.resolve(__dirname, '../../.env');
 
 if (fs.existsSync(envFile)) {
   loadEnvFile(envFile);
@@ -106,10 +103,10 @@ export const dataSourceOptions: DataSourceOptions = {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432', 10),
         username: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || 'postgrespassword',
+        password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME || 'mercora_db',
       }),
-  ssl: isNeonOrSsl ? { rejectUnauthorized: false } : false,
+  ssl: isNeonOrSsl ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' } : false,
   entities: allEntities,
   migrations: [path.join(__dirname, 'migrations/*{.ts,.js}')],
   migrationsTableName: 'migrations',

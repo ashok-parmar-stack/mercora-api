@@ -18,7 +18,7 @@ export class CreateBusinessUseCase {
     private readonly businessRepository: IBusinessRepository
   ) {}
 
-  async execute(dto: CreateBusinessDto): Promise<BusinessResponseDto> {
+  async execute(dto: CreateBusinessDto, ownerUserId?: string): Promise<BusinessResponseDto> {
     const slug = (dto.slug || dto.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")).replace(/^-+|-+$/g, "");
     const existing = await this.businessRepository.findBySlug(slug);
     if (existing) {
@@ -101,7 +101,8 @@ export class CreateBusinessUseCase {
       new Date(),
       new Date(),
       contacts,
-      pan
+      pan,
+      ownerUserId ?? null
     );
 
     const saved = await this.businessRepository.save(business, dto.categoryIds);

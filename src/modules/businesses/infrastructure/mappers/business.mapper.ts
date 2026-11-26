@@ -34,7 +34,8 @@ export class BusinessMapper {
       orm.created_at,
       orm.updated_at,
       orm.contacts || [],
-      orm.pan
+      orm.pan,
+      orm.owner_user_id ?? null
     );
   }
 
@@ -70,6 +71,7 @@ export class BusinessMapper {
     orm.gstin = domain.gstin;
     orm.pan = domain.pan || '';
     orm.cin = domain.cin;
+    orm.owner_user_id = domain.ownerUserId ?? null;
     orm.products = domain.products;
     return orm;
   }

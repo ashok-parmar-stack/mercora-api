@@ -270,7 +270,7 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
       );
     this.applyBusinessFilters(verificationQb, options, categories, "verification");
 
-    const [bizRows, assignmentRows, locationRows, cityRows, masterCatRows, verificationRow] = await Promise.all([
+    const [bizRows, assignmentRows, locationRows, cityRows, masterCatRows, productCatRows, verificationRow] = await Promise.all([
       bizForCategoriesQb.getRawMany(),
       this.dataSource
         .query(`SELECT business_id AS "businessId", category_id AS "categoryId" FROM business_category_assignments`)
@@ -278,6 +278,9 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
       locationsQb.getRawMany(),
       citiesQb.getRawMany(),
       masterCatQb.getRawMany(),
+      this.dataSource
+        .query(`SELECT name, slug, display_order AS "displayOrder" FROM product_categories WHERE is_active = true ORDER BY display_order ASC, name ASC`)
+        .catch(() => []),
       verificationQb.getRawOne(),
     ]);
 
@@ -302,6 +305,48 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
     const totalBusinesses = Number(verificationRow?.totalBusinesses) || 0;
     const verifiedCount = Number(verificationRow?.verifiedCount) || 0;
 
+    const masterCountByName = new Map<string, number>();
+    for (const row of masterCatRows) {
+      if (row?.name) {
+        const key = String(row.name).trim().toLowerCase();
+        masterCountByName.set(key, (masterCountByName.get(key) || 0) + (Number(row.count) || 0));
+      }
+    }
+
+    const mergedMasterMap = new Map<string, { name: string; slug: string; count: number; displayOrder: number }>();
+    for (const pc of productCatRows) {
+      if (!pc?.name) continue;
+      const name = String(pc.name).trim();
+      const key = name.toLowerCase();
+      mergedMasterMap.set(key, {
+        name,
+        slug: pc.slug ? String(pc.slug) : toTaxonomySlug(name),
+        count: masterCountByName.get(key) || 0,
+        displayOrder: Number(pc.displayOrder) || 0,
+      });
+    }
+    for (const row of masterCatRows) {
+      if (!row?.name) continue;
+      const name = String(row.name).trim();
+      const key = name.toLowerCase();
+      if (!mergedMasterMap.has(key)) {
+        mergedMasterMap.set(key, {
+          name,
+          slug: toTaxonomySlug(name),
+          count: Number(row.count) || 0,
+          displayOrder: 9999,
+        });
+      }
+    }
+
+    const mergedMasterCategories = Array.from(mergedMasterMap.values())
+      .sort((a, b) =>
+        b.count !== a.count
+          ? b.count - a.count
+          : a.displayOrder - b.displayOrder || a.name.localeCompare(b.name),
+      )
+      .map(({ name, slug, count }) => ({ name, slug, count }));
+
     const result: BusinessFacetsResult = {
       totalBusinesses,
       verifiedCount,
@@ -322,13 +367,7 @@ export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleI
           state: row.state ? String(row.state) : undefined,
           count: Number(row.count) || 0,
         })),
-      masterCategories: masterCatRows
-        .filter((row: any) => row?.name)
-        .map((row: any) => ({
-          name: String(row.name),
-          slug: toTaxonomySlug(row.name),
-          count: Number(row.count) || 0,
-        })),
+      masterCategories: mergedMasterCategories,
     };
 
     if (this.facetsCache.size >= 50) {

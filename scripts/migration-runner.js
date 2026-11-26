@@ -37,19 +37,13 @@ const isProdArg = args.some((arg) => ['prod', 'production', '--production', 'neo
 const isDevArg = args.some((arg) => ['dev', 'development', '--dev', '--development'].includes(arg.toLowerCase()));
 const isLocalArg = args.some((arg) => ['local', '--local'].includes(arg.toLowerCase()));
 
-let targetEnvFile = '.env.production';
+let targetEnvFile = '.env';
 if (envArg) {
   targetEnvFile = envArg.split('=')[1];
-} else if (isLocalArg) {
-  targetEnvFile = '.env';
 } else if (isDevArg) {
   targetEnvFile = fs.existsSync(path.join(__dirname, '../.env.development')) ? '.env.development' : '.env';
 } else if (isProdArg) {
   targetEnvFile = '.env.production';
-} else if (fs.existsSync(path.join(__dirname, '../.env.production'))) {
-  targetEnvFile = '.env.production';
-} else {
-  targetEnvFile = '.env';
 }
 
 const resolvedPath = path.isAbsolute(targetEnvFile) ? targetEnvFile : path.join(__dirname, '..', targetEnvFile);
@@ -121,20 +115,12 @@ async function run() {
     switch (command.toLowerCase()) {
       case 'run': {
         console.log('Checking and executing all pending migrations...');
-        const hasPending = await dataSource.showMigrations();
-        if (!hasPending) {
-          console.log('ℹ️  No pending migration files found.');
-          console.log('ℹ️  Syncing entity schema to guarantee all 28 tables exist...');
-          await dataSource.synchronize();
-          console.log('✅ All entity tables synchronized with database!');
+        const executed = await dataSource.runMigrations();
+        if (executed.length === 0) {
+          console.log('✅ No pending migrations to execute. Database is already up to date!');
         } else {
-          const executed = await dataSource.runMigrations();
-          if (executed.length === 0) {
-            console.log('✅ No pending migrations to execute. Database is already up to date!');
-          } else {
-            console.log(`✅ Successfully executed ${executed.length} migration(s):`);
-            executed.forEach((m) => console.log(`   • ${m.name}`));
-          }
+          console.log(`✅ Successfully executed ${executed.length} migration(s):`);
+          executed.forEach((m) => console.log(`   • ${m.name}`));
         }
         break;
       }

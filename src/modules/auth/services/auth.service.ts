@@ -393,4 +393,30 @@ export class AuthService {
         : null,
     };
   }
+
+  /**
+   * 10. Update Current Authenticated User's Own Profile (name & phone)
+   */
+  async updateMe(userId: string, body: { name?: string; phone?: string }) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User profile not found.');
+    }
+    if (typeof body.name === 'string' && body.name.trim()) {
+      user.name = body.name.trim();
+    }
+    if (typeof body.phone === 'string') {
+      user.phone = body.phone.trim();
+    }
+    const saved = await this.userRepo.save(user);
+    return {
+      success: true,
+      user: {
+        id: saved.id,
+        name: saved.name,
+        email: saved.email,
+        phone: saved.phone,
+      },
+    };
+  }
 }

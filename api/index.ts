@@ -9,7 +9,7 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap/configure-app';
 
 const server: Express = express();
-let isAppInitialized = false;
+let initPromise: Promise<void> | null = null;
 
 server.get(['/', '/api'], (_req: Request, res: Response) => {
   res.json({
@@ -29,13 +29,16 @@ async function bootstrap() {
   configureApp(app);
 
   await app.init();
-  isAppInitialized = true;
 }
 
 export default async function handler(req: Request, res: Response) {
-  if (!isAppInitialized) {
-    await bootstrap();
+  if (!initPromise) {
+    initPromise = bootstrap().catch((err) => {
+      initPromise = null;
+      throw err;
+    });
   }
+  await initPromise;
 
   // Vercel CLI 62+ rewrites requests to '/api'. Restore original requested URL
   // so NestJS router matches the intended route (e.g. /api/health, /api/v1/auth)
