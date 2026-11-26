@@ -33,6 +33,7 @@ export class UpdateBusinessUseCase {
     if (dto.gstin !== undefined) existing.gstin = dto.gstin;
     if (dto.pan !== undefined) existing.pan = dto.pan;
     if (dto.cin !== undefined) existing.cin = dto.cin;
+    if (dto.verificationStatus) existing.verificationStatus = dto.verificationStatus;
     if (Array.isArray(dto.contacts)) {
       const normalized = dto.contacts
         .filter((c) => c && typeof c.phone === "string" && c.phone.trim().length > 0)

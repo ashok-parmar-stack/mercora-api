@@ -45,6 +45,7 @@ export class CustomerBusinessController {
       if (!user?.email || existing.email?.toLowerCase() !== user.email.toLowerCase()) {
         throw new ForbiddenException("You do not have permission to update this business.");
       }
+      delete dto.verificationStatus;
     }
     return this.updateBusinessUseCase.execute(id, dto);
   }

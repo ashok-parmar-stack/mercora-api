@@ -43,7 +43,7 @@ export class PublicBusinessController {
   @ApiOperation({ summary: "List verified B2B businesses with filters, pagination, and sorting" })
   @ApiResponse({ status: 200, description: "Paginated list of verified businesses" })
   async list(@Query() query: BusinessQueryDto) {
-    return this.listBusinessesUseCase.execute(query);
+    return this.listBusinessesUseCase.execute({ ...query, verifiedOnly: true });
   }
 
   @Get("featured")
@@ -59,7 +59,7 @@ export class PublicBusinessController {
   @ApiOperation({ summary: "Get live dynamic counts for directory categories, locations, and verification status" })
   @ApiResponse({ status: 200, description: "Dynamic directory filter facets" })
   async getFacets(@Query() query: BusinessQueryDto) {
-    return this.businessRepository.getDirectoryFacets(query);
+    return this.businessRepository.getDirectoryFacets({ ...query, verifiedOnly: true });
   }
 
   @Get(":slug")

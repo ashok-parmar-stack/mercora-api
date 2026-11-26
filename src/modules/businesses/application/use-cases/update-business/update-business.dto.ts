@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsNumber, IsArray } from "class-validator";
+import { IsString, IsOptional, IsNumber, IsArray, IsEnum } from "class-validator";
+import { VerificationStatus } from "../../../domain/enums/verification-status.enum";
 
 export class UpdateBusinessDto {
   @IsOptional()
@@ -71,4 +72,8 @@ export class UpdateBusinessDto {
     email?: string;
     isPrimary?: boolean;
   }>;
+
+  @IsOptional()
+  @IsEnum(VerificationStatus)
+  verificationStatus?: VerificationStatus;
 }
