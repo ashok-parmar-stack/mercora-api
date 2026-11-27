@@ -1,14 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EmailLogEntity } from '../../../database/entities/email-log.entity';
 import { EmailTemplateService } from './email-template.service';
 import { MailerService } from './mailer.service';
 import { SendEmailOptions, SendMailResult } from '../interfaces/email.interface';
+import { MercoraLogger } from '../../../common/logger';
 
 @Injectable()
 export class EmailDispatcherService {
-  private readonly logger = new Logger(EmailDispatcherService.name);
+  private readonly logger = new MercoraLogger(EmailDispatcherService.name);
 
   constructor(
     @InjectRepository(EmailLogEntity)

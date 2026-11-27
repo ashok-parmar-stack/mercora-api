@@ -6,32 +6,47 @@ import type { WinstonModuleOptions } from 'nest-winston';
 
 const isServerless = Boolean(
   process.env.VERCEL ||
-  process.env.AWS_LAMBDA_FUNCTION_NAME ||
-  process.env.NOW_REGION
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.NOW_REGION,
 );
 
+const isProduction = process.env.NODE_ENV === 'production';
+const isTest = process.env.NODE_ENV === 'test';
+
+const resolvedLevel =
+  process.env.LOG_LEVEL ||
+  (isProduction ? 'info' : isTest ? 'warn' : 'debug');
+
 const timestampFormat = format.timestamp({
-  format: 'YYYY-MM-DD HH:mm:ss',
+  format: 'YYYY-MM-DD HH:mm:ss.SSS',
 });
 
-const consoleFormat = format.combine(
+const prodJsonFormat = format.combine(
+  timestampFormat,
+  format.errors({ stack: true }),
+  format.splat(),
+  format.json(),
+);
+
+const devConsoleFormat = format.combine(
   timestampFormat,
   format.errors({ stack: true }),
   nestWinstonModuleUtilities.format.nestLike('MercoraAPI', {
-    colors: !isServerless,
-    prettyPrint: true,
+    colors: !isServerless && !isProduction,
+    prettyPrint: !isProduction,
   }),
 );
 
 const transportsList: any[] = [
   new transports.Console({
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-    format: consoleFormat,
+    level: resolvedLevel,
+    silent: isTest && process.env.LOG_IN_TESTS !== 'true',
+    format: isProduction ? prodJsonFormat : devConsoleFormat,
   }),
 ];
 
-// In non-serverless environments (local dev / Docker), optionally add file rotation
-if (!isServerless) {
+// In non-serverless environments (local dev / Docker / VM), add daily rotated logs
+if (!isServerless && !isTest) {
   try {
     const logsDirectory = join(process.cwd(), 'logs');
     if (!existsSync(logsDirectory)) {
@@ -40,33 +55,51 @@ if (!isServerless) {
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const DailyRotateFile = require('winston-daily-rotate-file');
-    const nestLikeFormat = nestWinstonModuleUtilities.format.nestLike('MercoraAPI', {
-      colors: false,
-      prettyPrint: false,
-    });
 
-    const fileFormat = format.combine(
-      timestampFormat,
-      format.errors({ stack: true }),
-      nestLikeFormat,
-    );
+    const fileFormat = isProduction
+      ? prodJsonFormat
+      : format.combine(
+          timestampFormat,
+          format.errors({ stack: true }),
+          nestWinstonModuleUtilities.format.nestLike('MercoraAPI', {
+            colors: false,
+            prettyPrint: false,
+          }),
+        );
 
     const filterByLevel = (level: string) =>
       format((info) => (info.level === level ? info : false))();
+
+    const filterPayments = format((info) => {
+      const ctx = String(info.context || '');
+      const msg = String(info.message || '');
+      if (
+        ctx.includes('Payment') ||
+        ctx.includes('Razorpay') ||
+        ctx.includes('Subscription') ||
+        ctx.includes('Webhook') ||
+        ctx.includes('Invoice') ||
+        ctx.includes('Refund') ||
+        msg.includes('PAYMENT')
+      ) {
+        return info;
+      }
+      return false;
+    })();
 
     const rotateTransportOptions = {
       dirname: logsDirectory,
       datePattern: 'YYYY-MM-DD',
       zippedArchive: true,
       maxSize: '20m',
-      maxFiles: '14d',
+      maxFiles: '30d',
     };
 
     transportsList.push(
       new DailyRotateFile({
         ...rotateTransportOptions,
         filename: 'combined-%DATE%.log',
-        level: 'debug',
+        level: resolvedLevel,
         format: fileFormat,
       }),
       new DailyRotateFile({
@@ -75,6 +108,13 @@ if (!isServerless) {
         level: 'error',
         format: format.combine(filterByLevel('error'), fileFormat),
       }),
+      new DailyRotateFile({
+        ...rotateTransportOptions,
+        filename: 'payments-%DATE%.log',
+        level: 'info',
+        maxFiles: '90d',
+        format: format.combine(filterPayments, prodJsonFormat),
+      }),
     );
   } catch {
     // Fallback gracefully to console logging only
@@ -82,8 +122,7 @@ if (!isServerless) {
 }
 
 export const loggerConfig: WinstonModuleOptions = {
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  format: consoleFormat,
+  level: resolvedLevel,
+  format: isProduction ? prodJsonFormat : devConsoleFormat,
   transports: transportsList,
 };
-

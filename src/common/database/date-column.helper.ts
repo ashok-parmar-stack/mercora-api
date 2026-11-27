@@ -6,6 +6,7 @@ import {
   DeleteDateColumn,
   Column,
   ColumnOptions,
+  ValueTransformer,
 } from 'typeorm';
 
 export function loadEnvEarly(): void {
@@ -58,14 +59,18 @@ export const isPostgres = (): boolean =>
 
 export type TimestampColumnType = 'timestamptz' | 'datetime';
 
-/**
- * Timezone-aware timestamp data type:
- * - PostgreSQL: 'timestamptz' (TIMESTAMP WITH TIME ZONE)
- * - SQLite: 'datetime' (ISO 8601 UTC timestamp format)
- */
 export const TIMESTAMPTZ_TYPE: TimestampColumnType = isPostgres()
   ? 'timestamptz'
   : 'datetime';
+
+export const JSON_COLUMN_TYPE = isPostgres() ? 'jsonb' : 'simple-json';
+
+export const bigintNumberTransformer: ValueTransformer = {
+  to: (value: number | null | undefined) =>
+    value === undefined ? undefined : value === null ? null : Math.trunc(Number(value)),
+  from: (value: string | number | null | undefined) =>
+    value === null || value === undefined ? null : Number(value),
+};
 
 export function CreateTimestampColumn(options: ColumnOptions = {}) {
   return CreateDateColumn({

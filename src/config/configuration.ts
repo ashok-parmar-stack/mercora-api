@@ -81,6 +81,12 @@ export interface AppConfig {
     forcePathStyle: boolean;
     publicUrl: string;
   };
+  razorpay: {
+    keyId: string;
+    keySecret: string;
+    webhookSecret: string;
+    apiTimeoutMs: number;
+  };
 }
 
 export default (): AppConfig => ({
@@ -121,7 +127,7 @@ export default (): AppConfig => ({
     jwtRefreshSecret: resolveJwtSecret('JWT_REFRESH_SECRET'),
     accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m',
     refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d',
-    sessionInactivityHours: parseInt(process.env.SESSION_INACTIVITY_HOURS || '168', 10), // 7 days default
+    sessionInactivityHours: parseInt(process.env.SESSION_INACTIVITY_HOURS || '168', 10),
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:9000',
   },
   mail: {
@@ -144,5 +150,11 @@ export default (): AppConfig => ({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
     forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE !== 'false',
     publicUrl: process.env.NEXT_PUBLIC_STORAGE_URL || '/uploads',
+  },
+  razorpay: {
+    keyId: (process.env.RAZORPAY_KEY_ID || '').trim(),
+    keySecret: (process.env.RAZORPAY_KEY_SECRET || '').trim(),
+    webhookSecret: (process.env.RAZORPAY_WEBHOOK_SECRET || '').trim(),
+    apiTimeoutMs: parseInt(process.env.RAZORPAY_API_TIMEOUT_MS || '15000', 10),
   },
 });

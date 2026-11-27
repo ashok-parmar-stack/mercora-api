@@ -26,7 +26,9 @@ export class AdminBusinessController {
   @ApiOperation({ summary: "Admin add new business profile" })
   @ApiResponse({ status: 201, description: "Business created successfully" })
   async create(@Body() dto: CreateBusinessDto) {
-    return this.createBusinessUseCase.execute(dto);
+    return this.createBusinessUseCase.execute(dto, undefined, {
+      bypassSubscriptionLimits: true,
+    });
   }
 
   @Get()

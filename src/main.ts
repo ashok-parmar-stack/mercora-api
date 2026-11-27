@@ -12,6 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger(loggerConfig),
     bufferLogs: true,
+    rawBody: true,
   });
 
   const logger = new MercoraLogger('MercoraBootstrap');

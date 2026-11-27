@@ -1,5 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MercoraLogger } from '../../common/logger';
 import {
   S3Client,
   PutObjectCommand,
@@ -55,7 +56,7 @@ export interface StoredFile {
 
 @Injectable()
 export class StorageService implements OnModuleInit {
-  private readonly logger = new Logger(StorageService.name);
+  private readonly logger = new MercoraLogger(StorageService.name);
   private client: S3Client;
   private bucket: string;
   private endpointUrl: string;

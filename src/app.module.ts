@@ -21,6 +21,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { BusinessCategoriesModule } from './modules/business-categories/business-categories.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -51,6 +52,8 @@ import { BusinessCategoriesModule } from './modules/business-categories/business
     AuthModule,
     // ── S3-Compatible Object Storage (Neon / AWS S3 / MinIO / R2) ─────────────
     StorageModule,
+    // ── Centralized Subscriptions, Razorpay Payments, Invoices & Refunds ──────
+    SubscriptionsModule,
   ],
   providers: [
     {

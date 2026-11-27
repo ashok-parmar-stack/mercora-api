@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Post, Body, Req, HttpCode, HttpStatus, Inject, NotFoundException } from "@nestjs/common";
+import { Controller, Get, Param, Query, Post, Body, Req, HttpCode, HttpStatus, Inject, NotFoundException, Optional } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -14,7 +14,8 @@ import { BusinessEnquiryEntity } from "../../../../database/entities/business-en
 import { API_HEADERS } from "../../../../config/headers.config";
 import { API_MESSAGES } from "../../../../common/messages";
 import { IBusinessRepository, BUSINESS_REPOSITORY_TOKEN } from "../../domain/repositories/business.repository.interface";
-import { Public, Roles, BUSINESS_WRITE_ROLES } from "../../../../common";
+import { Public, Roles, BUSINESS_WRITE_ROLES, CATALOG_ADMIN_ROLES } from "../../../../common";
+import { SubscriptionEntitlementService } from "../../../subscriptions/services/subscription-entitlement.service";
 
 @ApiTags(API_HEADERS.modules.businesses.tag)
 @Controller("businesses")
@@ -27,6 +28,8 @@ export class PublicBusinessController {
     private readonly businessRepository: IBusinessRepository,
     @InjectRepository(BusinessEnquiryEntity)
     private readonly enquiryRepo: Repository<BusinessEnquiryEntity>,
+    @Optional()
+    private readonly entitlementService?: SubscriptionEntitlementService,
   ) {}
 
   @Post()
@@ -34,8 +37,19 @@ export class PublicBusinessController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Add / register a new verified business" })
   @ApiResponse({ status: 201, description: "Business created successfully" })
-  async create(@Body() dto: CreateBusinessDto) {
-    return this.createBusinessUseCase.execute(dto);
+  async create(
+    @Body() dto: CreateBusinessDto,
+    @Req() req?: { user?: { id?: string; userId?: string; email?: string; role?: string } },
+  ) {
+    const userId = req?.user?.id || req?.user?.userId;
+    const isAdmin = Boolean(
+      req?.user?.role &&
+        (CATALOG_ADMIN_ROLES as readonly string[]).includes(req.user.role.toUpperCase()),
+    );
+    return this.createBusinessUseCase.execute(dto, userId, {
+      bypassSubscriptionLimits: isAdmin,
+      ownerEmail: req?.user?.email,
+    });
   }
 
   @Get()
@@ -50,8 +64,23 @@ export class PublicBusinessController {
   @Public()
   @ApiOperation({ summary: "Get featured top-tier verified businesses" })
   async getFeatured(@Query("limit") limit?: number) {
-    const featured = await this.businessRepository.findFeatured(limit ? Number(limit) : 6);
-    return featured.map((b) => BusinessResponseDto.fromDomain(b));
+    const safeLimit = limit ? Number(limit) : 6;
+    const [featured, entitledIds] = await Promise.all([
+      this.businessRepository.findFeatured(safeLimit * 2),
+      this.entitlementService
+        ? this.entitlementService.getFeaturedEntitledBusinessIds().catch(() => [])
+        : Promise.resolve([] as string[]),
+    ]);
+    const entitledSet = new Set(entitledIds);
+    const prioritized = [
+      ...featured.filter((b) => entitledSet.has(b.id)),
+      ...featured.filter((b) => !entitledSet.has(b.id)),
+    ].slice(0, safeLimit);
+
+    return prioritized.map((b) => ({
+      ...BusinessResponseDto.fromDomain(b),
+      isFeaturedSubscription: entitledSet.has(b.id),
+    }));
   }
 
   @Get("facets")
