@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from "@nestjs/common";
+import { Injectable, Inject, NotFoundException, ConflictException } from "@nestjs/common";
 import {
   IBusinessRepository,
   BUSINESS_REPOSITORY_TOKEN,
@@ -6,6 +6,7 @@ import {
 import { UpdateBusinessDto } from "./update-business.dto";
 import { BusinessResponseDto } from "../../dto/business-response.dto";
 import { API_MESSAGES } from "../../../../../common/messages";
+import { toSlug } from "../../../../../common/services/slug.util";
 
 @Injectable()
 export class UpdateBusinessUseCase {
@@ -21,6 +22,16 @@ export class UpdateBusinessUseCase {
     }
 
     if (dto.name) existing.name = dto.name;
+    if (dto.slug !== undefined) {
+      const normalized = dto.slug.trim() ? toSlug(dto.slug) : "";
+      if (normalized && normalized !== existing.slug) {
+        const collision = await this.businessRepository.findBySlug(normalized);
+        if (collision && collision.id !== existing.id) {
+          throw new ConflictException(API_MESSAGES.businesses.slugExists);
+        }
+        existing.slug = normalized;
+      }
+    }
     if (dto.category) existing.category = dto.category;
     if (dto.businessType) existing.businessType = dto.businessType;
     if (dto.city) existing.city = dto.city;

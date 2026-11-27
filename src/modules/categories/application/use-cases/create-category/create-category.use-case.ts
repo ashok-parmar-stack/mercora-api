@@ -7,6 +7,7 @@ import { CreateCategoryDto } from "./create-category.dto";
 import { CategoryEntity } from "../../../domain/entities/category.entity";
 import { CategoryStatus } from "../../../domain/enums/category-status.enum";
 import { API_MESSAGES } from "../../../../../common/messages";
+import { toSlug, toUniqueSlug } from "../../../../../common/services/slug.util";
 
 @Injectable()
 export class CreateCategoryUseCase {
@@ -16,10 +17,14 @@ export class CreateCategoryUseCase {
   ) {}
 
   async execute(dto: CreateCategoryDto): Promise<CategoryEntity> {
-    const slug = dto.slug || dto.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const customSlug = dto.slug?.trim() ? toSlug(dto.slug) : "";
+    let slug = customSlug || toSlug(dto.name) || "category";
     const existing = await this.categoryRepo.findBySlug(slug);
     if (existing) {
-      throw new ConflictException(API_MESSAGES.categories.slugExists);
+      if (customSlug) {
+        throw new ConflictException(API_MESSAGES.categories.slugExists);
+      }
+      slug = toUniqueSlug(slug);
     }
 
     const category = new CategoryEntity(

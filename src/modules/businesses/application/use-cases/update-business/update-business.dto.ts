@@ -8,6 +8,10 @@ export class UpdateBusinessDto {
 
   @IsOptional()
   @IsString()
+  slug?: string;
+
+  @IsOptional()
+  @IsString()
   category?: string;
 
   @IsOptional()

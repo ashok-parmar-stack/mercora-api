@@ -12,22 +12,14 @@ import { GetCategoryUseCase } from "./application/use-cases/get-category/get-cat
 import { ListCategoriesUseCase } from "./application/use-cases/list-categories/list-categories.use-case";
 
 // Controllers
-import {
-  PublicCategoryController,
-  PublicMasterCategoryAliasController,
-} from "./presentation/controllers/public-category.controller";
-import {
-  AdminCategoryController,
-  AdminMasterCategoryAliasController,
-} from "./presentation/controllers/admin-category.controller";
+import { PublicCategoryController } from "./presentation/controllers/public-category.controller";
+import { AdminCategoryController } from "./presentation/controllers/admin-category.controller";
 
 @Module({
   imports: [TypeOrmModule.forFeature([CategoryOrmEntity])],
   controllers: [
     PublicCategoryController,
-    PublicMasterCategoryAliasController,
     AdminCategoryController,
-    AdminMasterCategoryAliasController,
   ],
   providers: [
     CreateCategoryUseCase,

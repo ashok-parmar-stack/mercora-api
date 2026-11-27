@@ -5,6 +5,7 @@ import { UserEntity } from '../../../database/entities';
 import { MercoraLogger } from '../../../common/logger';
 import { AuditService } from '../../../common/audit';
 import { BaseEntityService } from '../../../common/services';
+import { toSlug } from '../../../common/services/slug.util';
 import { CreateUserDto } from '../dto';
 import * as bcrypt from 'bcrypt';
 
@@ -31,12 +32,15 @@ export class CreateUserService extends BaseEntityService<UserEntity> {
     // Validate email uniqueness
     await this.ensureUnique('email', dto.email);
 
-    // Generate or validate slug
-    let slug = dto.slug;
-    if (slug) {
-      await this.ensureUnique('slug', slug);
+    // Generate or validate slug (normalize custom slug, or auto-generate from name/email)
+    const fallbackSeed = dto.name?.trim() || dto.email.split('@')[0];
+    const requestedSlug = dto.slug?.trim() ? toSlug(dto.slug) : '';
+    let slug: string;
+    if (requestedSlug) {
+      await this.ensureUnique('slug', requestedSlug);
+      slug = requestedSlug;
     } else {
-      slug = await this.generateUniqueSlug(dto.name, 'slug');
+      slug = await this.generateUniqueSlug(fallbackSeed, 'slug');
     }
 
     // Securely hash password if provided

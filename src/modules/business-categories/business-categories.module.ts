@@ -13,17 +13,13 @@ import { UpdateBusinessCategoryUseCase } from "./application/use-cases/update-bu
 import { DeleteBusinessCategoryUseCase } from "./application/use-cases/delete-business-category.use-case";
 
 // Controllers
-import {
-  PublicBusinessCategoryController,
-  PublicBusinessTypeAliasController,
-} from "./presentation/controllers/public-business-category.controller";
+import { PublicBusinessCategoryController } from "./presentation/controllers/public-business-category.controller";
 import { AdminBusinessCategoryController } from "./presentation/controllers/admin-business-category.controller";
 
 @Module({
   imports: [TypeOrmModule.forFeature([BusinessCategoryOrmEntity])],
   controllers: [
     PublicBusinessCategoryController,
-    PublicBusinessTypeAliasController,
     AdminBusinessCategoryController,
   ],
   providers: [

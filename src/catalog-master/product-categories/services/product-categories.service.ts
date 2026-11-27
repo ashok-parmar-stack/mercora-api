@@ -20,6 +20,7 @@ import {
   AuditService,
   toSlug,
   toCode,
+  toUniqueSlug,
 } from '../../../common';
 import { saveInChunksTransactional } from '../../../common/utils/bulk-upsert.util';
 
@@ -215,7 +216,8 @@ export class ProductCategoriesService {
   async create(dto: CreateProductCategoryDto): Promise<ProductCategoryEntity> {
     const name = dto.name.trim();
     const code = dto.code ? generateCode(dto.code) : generateCode(name);
-    const slug = dto.slug ? generateSlug(dto.slug) : generateSlug(name);
+    const customSlug = dto.slug?.trim() ? generateSlug(dto.slug) : '';
+    let slug = customSlug || generateSlug(name) || 'category';
 
     // Uniqueness checks
     const existingCode = await this.categoryRepo.findOne({ where: { code } });
@@ -225,7 +227,10 @@ export class ProductCategoriesService {
 
     const existingSlug = await this.categoryRepo.findOne({ where: { slug } });
     if (existingSlug) {
-      throw new ConflictException(`Category slug '${slug}' already exists`);
+      if (customSlug) {
+        throw new ConflictException(`Category slug '${slug}' already exists`);
+      }
+      slug = toUniqueSlug(slug);
     }
 
     let level = 1;

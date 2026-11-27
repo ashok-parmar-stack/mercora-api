@@ -23,7 +23,6 @@ import { LocationQueryService } from './location-query.service';
 import { LgdSyncHelperService } from './services/lgd-sync-helper.service';
 import { LocationHierarchySyncService } from './services/location-hierarchy-sync.service';
 import { LocationController } from './location.controller';
-import { AdminLocationSyncController } from './admin-location-sync.controller';
 
 @Module({
   imports: [
@@ -38,7 +37,7 @@ import { AdminLocationSyncController } from './admin-location-sync.controller';
       MasterSyncErrorEntity,
     ]),
   ],
-  controllers: [LocationController, AdminLocationSyncController],
+  controllers: [LocationController],
   providers: [
     LgdStateSource,
     LgdDistrictSource,

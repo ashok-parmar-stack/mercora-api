@@ -12,6 +12,7 @@ import {
   RemoveUserPermissionDto,
 } from '../dto';
 import { FindUserService } from './find-user.service';
+import { toSlug, toUniqueSlug } from '../../../common/services/slug.util';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -35,8 +36,22 @@ export class UpdateUserService {
     const user = await this.findUserService.findOne(idOrSlug);
     const oldData = { ...user };
 
-    if (dto.slug && dto.slug !== user.slug) {
-      await this.findUserService.ensureUnique('slug', dto.slug, user.id);
+    if (dto.slug !== undefined) {
+      const normalized = dto.slug.trim() ? toSlug(dto.slug) : '';
+      if (normalized) {
+        if (normalized !== user.slug) {
+          await this.findUserService.ensureUnique('slug', normalized, user.id);
+        }
+        dto.slug = normalized;
+      } else {
+        const seed = toSlug(dto.name || user.name || user.email.split('@')[0]) || 'user';
+        const collision = await this.userRepo.findOne({ where: { slug: seed } });
+        dto.slug = collision && collision.id !== user.id ? toUniqueSlug(seed) : seed;
+      }
+    } else if (!user.slug) {
+      const seed = toSlug(dto.name || user.name || user.email.split('@')[0]) || 'user';
+      const collision = await this.userRepo.findOne({ where: { slug: seed } });
+      user.slug = collision && collision.id !== user.id ? toUniqueSlug(seed) : seed;
     }
 
     if (

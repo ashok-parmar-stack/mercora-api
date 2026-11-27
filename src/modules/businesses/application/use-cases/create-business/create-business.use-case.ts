@@ -10,19 +10,24 @@ import { BusinessResponseDto } from "../../dto/business-response.dto";
 import { VerificationStatus } from "../../../domain/enums/verification-status.enum";
 import { BusinessType } from "../../../domain/enums/business-type.enum";
 import { API_MESSAGES } from "../../../../../common/messages";
+import { toSlug, toUniqueSlug } from "../../../../../common/services/slug.util";
 
 @Injectable()
 export class CreateBusinessUseCase {
   constructor(
     @Inject(BUSINESS_REPOSITORY_TOKEN)
     private readonly businessRepository: IBusinessRepository
-  ) {}
+  ) { }
 
   async execute(dto: CreateBusinessDto, ownerUserId?: string): Promise<BusinessResponseDto> {
-    const slug = (dto.slug || dto.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")).replace(/^-+|-+$/g, "");
+    const customSlug = dto.slug?.trim() ? toSlug(dto.slug) : "";
+    let slug = customSlug || toSlug(dto.name) || "business";
     const existing = await this.businessRepository.findBySlug(slug);
     if (existing) {
-      throw new ConflictException(API_MESSAGES.businesses.slugExists);
+      if (customSlug) {
+        throw new ConflictException(API_MESSAGES.businesses.slugExists);
+      }
+      slug = toUniqueSlug(slug);
     }
 
     const businessType = dto.businessType || dto.business_type || BusinessType.MANUFACTURER;
@@ -40,8 +45,8 @@ export class CreateBusinessUseCase {
       dto.reviewCount !== undefined
         ? Number(dto.reviewCount)
         : dto.review_count !== undefined
-        ? Number(dto.review_count)
-        : 0;
+          ? Number(dto.review_count)
+          : 0;
     const verificationStatus = (dto.verificationStatus ||
       dto.verification_status ||
       dto.tier ||
