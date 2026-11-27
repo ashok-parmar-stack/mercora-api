@@ -15,6 +15,7 @@ describe('Businesses Unit Tests', () => {
       await expect(
         useCase.execute({
           name: 'Apex Steel',
+          slug: 'apex-steel',
           category: 'Metals',
           city: 'Surat',
           state: 'Gujarat',
