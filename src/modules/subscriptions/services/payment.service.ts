@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { LessThanOrEqual, Repository } from 'typeorm';
 import { MercoraLogger } from '../../../common/logger';
 import { STAFF_ROLES } from '../../../common/constants/roles.constants';
+import { parseUtcDateRange } from '../../../common/utils/date.util';
 import { PaymentEntity } from '../entities/payment.entity';
 import { PaymentAttemptEntity } from '../entities/payment-attempt.entity';
 import { SubscriptionEntity } from '../entities/subscription.entity';
@@ -696,17 +697,15 @@ export class PaymentService {
     if (query.planId) {
       qb.andWhere('sub.planId = :planId', { planId: query.planId });
     }
-    if (query.fromDate) {
-      const from = new Date(query.fromDate);
-      if (!Number.isNaN(from.getTime())) {
-        qb.andWhere('p.createdAt >= :fromDate', { fromDate: from });
-      }
+    const { from, to, toExclusive } = parseUtcDateRange(query.fromDate, query.toDate);
+    if (from) {
+      qb.andWhere('p.createdAt >= :fromDate', { fromDate: from });
     }
-    if (query.toDate) {
-      const to = new Date(query.toDate);
-      if (!Number.isNaN(to.getTime())) {
-        qb.andWhere('p.createdAt <= :toDate', { toDate: to });
-      }
+    if (to) {
+      qb.andWhere(
+        toExclusive ? 'p.createdAt < :toDate' : 'p.createdAt <= :toDate',
+        { toDate: to },
+      );
     }
     if (query.search?.trim()) {
       const q = `%${query.search.trim().toLowerCase()}%`;
