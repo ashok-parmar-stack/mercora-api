@@ -32,7 +32,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { SessionMetadata } from '../services/session.service';
 
 @ApiTags('Authentication & Sessions')
-@Controller(['v1/auth', 'auth'])
+@Controller('v1/auth')
 @UseGuards(JwtAuthGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

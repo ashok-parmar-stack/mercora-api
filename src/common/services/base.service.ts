@@ -119,7 +119,7 @@ export abstract class BaseEntityService<T extends ObjectLiteral> {
     baseValue: string,
     slugField: keyof T = 'slug' as keyof T,
   ): Promise<string> {
-    const cleanBase = toSlug(baseValue);
+    const cleanBase = toSlug(baseValue || '') || 'item';
     const existing = await this.repository.findOne({
       where: { [slugField]: cleanBase } as FindOptionsWhere<T>,
     });
@@ -128,8 +128,17 @@ export abstract class BaseEntityService<T extends ObjectLiteral> {
       return cleanBase;
     }
 
-    // Append short random suffix if collision
-    return toUniqueSlug(baseValue);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = toUniqueSlug(cleanBase);
+      const collision = await this.repository.findOne({
+        where: { [slugField]: candidate } as FindOptionsWhere<T>,
+      });
+      if (!collision) {
+        return candidate;
+      }
+    }
+
+    return `${cleanBase}-${Date.now().toString(36)}`;
   }
 
   /**

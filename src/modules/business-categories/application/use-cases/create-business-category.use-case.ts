@@ -6,7 +6,7 @@ import {
 import { BusinessCategoryEntity } from "../../domain/entities/business-category.entity";
 import { CreateBusinessCategoryDto } from "../dto/create-business-category.dto";
 import { BusinessCategoryStatus } from "../../domain/enums/business-category-status.enum";
-import { toSlug, toCode } from "../../../../common";
+import { toSlug, toUniqueSlug, toCode } from "../../../../common";
 
 @Injectable()
 export class CreateBusinessCategoryUseCase {
@@ -16,14 +16,19 @@ export class CreateBusinessCategoryUseCase {
   ) {}
 
   async execute(dto: CreateBusinessCategoryDto): Promise<BusinessCategoryEntity> {
-    const slug = dto.slug || toSlug(dto.name);
+    const customSlug = dto.slug?.trim() ? toSlug(dto.slug) : "";
+    let slug = customSlug || toSlug(dto.name) || "category";
     const code = (dto.code || toCode(dto.name)).toUpperCase();
-    const id = dto.parentId ? `sub-${slug}` : slug;
 
     const existingSlug = await this.repo.findBySlug(slug);
     if (existingSlug) {
-      throw new ConflictException(`Business category with slug '${slug}' already exists`);
+      if (customSlug) {
+        throw new ConflictException(`Business category with slug '${slug}' already exists`);
+      }
+      slug = toUniqueSlug(slug);
     }
+
+    const id = dto.parentId ? `sub-${slug}` : slug;
 
     const existingCode = await this.repo.findByCode(code);
     if (existingCode) {

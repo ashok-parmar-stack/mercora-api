@@ -1,8 +1,7 @@
-import { Controller, Get, Post, Query, HttpStatus, HttpCode } from '@nestjs/common';
+import { Controller, Get, Query, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { LocationSyncService } from './location-sync.service';
 import { LocationQueryService, LocationCityDto } from './location-query.service';
-import { Public, Roles, CATALOG_ADMIN_ROLES } from '../common';
+import { Public } from '../common';
 
 export type { LocationCityDto };
 
@@ -11,7 +10,6 @@ export type { LocationCityDto };
 export class LocationController {
   constructor(
     private readonly locationQueryService: LocationQueryService,
-    private readonly locationSyncService: LocationSyncService,
   ) {}
 
   @Get('countries')
@@ -97,20 +95,6 @@ export class LocationController {
       statusCode: HttpStatus.OK,
       message: 'Cities fetched successfully',
       data,
-    };
-  }
-
-  @Post('sync')
-  @Roles(...CATALOG_ADMIN_ROLES)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Execute parent-first location sync (LGD)' })
-  async syncAll() {
-    const result = await this.locationSyncService.syncAllLocations();
-    return {
-      success: true,
-      statusCode: HttpStatus.OK,
-      message: result.message,
-      data: result,
     };
   }
 }

@@ -16,6 +16,7 @@ import { EmailDispatcherService } from '../../email/services/email-dispatcher.se
 import { RegisterDto } from '../dto/register.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
+import { toSlug, toUniqueSlug } from '../../../common/services/slug.util';
 
 @Injectable()
 export class RegistrationVerificationService {
@@ -65,10 +66,15 @@ export class RegistrationVerificationService {
     }
 
     const hashedPassword = await this.passwordService.hash(dto.password);
+    const baseSlug = toSlug(dto.name) || toSlug(normalizedEmail.split('@')[0]) || 'user';
+    const existingSlug = await this.userRepo.findOne({ where: { slug: baseSlug } });
+    const slug = existingSlug ? toUniqueSlug(baseSlug) : baseSlug;
+
     const savedUser = await this.userRepo.save(
       this.userRepo.create({
         name: dto.name.trim(),
         email: normalizedEmail,
+        slug,
         password: hashedPassword,
         statusId: pendingStatus.id,
         roleId: defaultRole ? defaultRole.id : undefined,

@@ -28,8 +28,3 @@ export class PublicCategoryController {
   }
 }
 
-@ApiTags("Master Categories")
-@Public()
-@Controller("master-categories")
-export class PublicMasterCategoryAliasController extends PublicCategoryController {}
-

@@ -35,8 +35,3 @@ export class PublicBusinessCategoryController {
     return this.getUseCase.execute(slug);
   }
 }
-
-@ApiTags("Business Categories / Types Master")
-@Public()
-@Controller("business-types")
-export class PublicBusinessTypeAliasController extends PublicBusinessCategoryController {}

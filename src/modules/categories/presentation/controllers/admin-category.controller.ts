@@ -38,8 +38,3 @@ export class AdminCategoryController {
   }
 }
 
-@ApiTags("Master Categories (Admin)")
-@Roles(...CATALOG_ADMIN_ROLES)
-@Controller("admin/master-categories")
-export class AdminMasterCategoryAliasController extends AdminCategoryController {}
-
