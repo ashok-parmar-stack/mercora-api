@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { SendMailResult } from '../interfaces/email.interface';
+import { MercoraLogger } from '../../../common/logger';
 
 @Injectable()
 export class MailerService {
-  private readonly logger = new Logger(MailerService.name);
+  private readonly logger = new MercoraLogger(MailerService.name);
   private transporter: nodemailer.Transporter | null = null;
 
   constructor(private readonly configService: ConfigService) {
@@ -64,13 +65,13 @@ export class MailerService {
         html,
       });
 
-      this.logger.log(`Dispatched email to [${to}] - MessageId: ${info.messageId}`);
+      this.logger.info('Dispatched email', { to, messageId: info.messageId });
       return {
         success: true,
         messageId: info.messageId,
       };
-    } catch (error) {
-      this.logger.error(`Failed to send email to [${to}]: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error('Failed to send email', error, { to });
       return {
         success: false,
         error: error.message,

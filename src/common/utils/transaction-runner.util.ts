@@ -1,7 +1,7 @@
-import { DataSource, QueryRunner } from "typeorm";
-import { Logger } from "@nestjs/common";
+import { DataSource, QueryRunner } from 'typeorm';
+import { MercoraLogger } from '../logger';
 
-const logger = new Logger("TransactionRunner");
+const logger = new MercoraLogger('TransactionRunner');
 
 /**
  * Executes a callback within a managed TypeORM database transaction.
@@ -10,7 +10,7 @@ const logger = new Logger("TransactionRunner");
 export async function runInTransaction<T>(
   dataSource: DataSource,
   operation: (queryRunner: QueryRunner) => Promise<T>,
-  contextName: string = "DatabaseOperation"
+  contextName = 'DatabaseOperation',
 ): Promise<T> {
   const queryRunner = dataSource.createQueryRunner();
   await queryRunner.connect();
@@ -21,11 +21,11 @@ export async function runInTransaction<T>(
     await queryRunner.commitTransaction();
     return result;
   } catch (error: any) {
-    logger.error(`[${contextName}] Transaction failed: ${error.message}. Rolling back.`, error.stack);
+    logger.error(`[${contextName}] Transaction failed — rolling back`, error);
     try {
       await queryRunner.rollbackTransaction();
     } catch (rollbackError: any) {
-      logger.error(`[${contextName}] Error during transaction rollback: ${rollbackError.message}`);
+      logger.error(`[${contextName}] Transaction rollback error`, rollbackError);
     }
     throw error;
   } finally {

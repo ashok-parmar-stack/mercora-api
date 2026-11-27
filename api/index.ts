@@ -24,6 +24,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
     logger: WinstonModule.createLogger(loggerConfig),
     bufferLogs: true,
+    rawBody: true,
   });
 
   configureApp(app);

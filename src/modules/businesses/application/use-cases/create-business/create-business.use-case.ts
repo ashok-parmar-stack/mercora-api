@@ -1,4 +1,4 @@
-import { Injectable, Inject, ConflictException } from "@nestjs/common";
+import { Injectable, Inject, ConflictException, Optional } from "@nestjs/common";
 import {
   IBusinessRepository,
   BUSINESS_REPOSITORY_TOKEN,
@@ -11,15 +11,30 @@ import { VerificationStatus } from "../../../domain/enums/verification-status.en
 import { BusinessType } from "../../../domain/enums/business-type.enum";
 import { API_MESSAGES } from "../../../../../common/messages";
 import { toSlug, toUniqueSlug } from "../../../../../common/services/slug.util";
+import { SubscriptionEntitlementService } from "../../../../subscriptions/services/subscription-entitlement.service";
+import { DEFAULT_FREE_PLAN_LIMITS } from "../../../../subscriptions/subscription.constants";
+import { ForbiddenException } from "@nestjs/common";
 
 @Injectable()
 export class CreateBusinessUseCase {
   constructor(
     @Inject(BUSINESS_REPOSITORY_TOKEN)
-    private readonly businessRepository: IBusinessRepository
+    private readonly businessRepository: IBusinessRepository,
+    @Optional()
+    private readonly entitlementService?: SubscriptionEntitlementService,
   ) { }
 
-  async execute(dto: CreateBusinessDto, ownerUserId?: string): Promise<BusinessResponseDto> {
+  async execute(
+    dto: CreateBusinessDto,
+    ownerUserId?: string,
+    options?: { bypassSubscriptionLimits?: boolean; ownerEmail?: string },
+  ): Promise<BusinessResponseDto> {
+    if (ownerUserId && !options?.bypassSubscriptionLimits && this.entitlementService) {
+      await this.entitlementService.assertCanCreateBusiness(
+        ownerUserId,
+        options?.ownerEmail || dto.email,
+      );
+    }
     const customSlug = dto.slug?.trim() ? toSlug(dto.slug) : "";
     let slug = customSlug || toSlug(dto.name) || "business";
     const existing = await this.businessRepository.findBySlug(slug);
@@ -77,6 +92,49 @@ export class CreateBusinessUseCase {
     const cin = dto.cin || "U00000GJ2025PTC000000";
     const id = dto.id || `biz-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const products = dto.products || [];
+
+    if (ownerUserId && !options?.bypassSubscriptionLimits && this.entitlementService) {
+      if (products.length > DEFAULT_FREE_PLAN_LIMITS.maxProducts) {
+        const owned = await this.entitlementService.findOwnedBusinesses(
+          ownerUserId,
+          options?.ownerEmail || dto.email,
+        );
+        let maxProd = DEFAULT_FREE_PLAN_LIMITS.maxProducts;
+        for (const ob of owned) {
+          const ent = await this.entitlementService.getBusinessEntitlements(ob.id);
+          if (ent.limits.maxProducts < 0) {
+            maxProd = -1;
+            break;
+          }
+          if (ent.limits.maxProducts > maxProd) maxProd = ent.limits.maxProducts;
+        }
+        if (maxProd >= 0 && products.length > maxProd) {
+          throw new ForbiddenException(
+            `Your current plan allows up to ${maxProd} product(s) per business. Upgrade your subscription to add more products.`,
+          );
+        }
+      }
+      if (contacts.length > DEFAULT_FREE_PLAN_LIMITS.maxContacts) {
+        const owned = await this.entitlementService.findOwnedBusinesses(
+          ownerUserId,
+          options?.ownerEmail || dto.email,
+        );
+        let maxCnt = DEFAULT_FREE_PLAN_LIMITS.maxContacts;
+        for (const ob of owned) {
+          const ent = await this.entitlementService.getBusinessEntitlements(ob.id);
+          if (ent.limits.maxContacts < 0) {
+            maxCnt = -1;
+            break;
+          }
+          if (ent.limits.maxContacts > maxCnt) maxCnt = ent.limits.maxContacts;
+        }
+        if (maxCnt >= 0 && contacts.length > maxCnt) {
+          throw new ForbiddenException(
+            `Your current plan allows up to ${maxCnt} contact channel(s). Upgrade your subscription to add more contacts.`,
+          );
+        }
+      }
+    }
 
     const business = new BusinessEntity(
       id,

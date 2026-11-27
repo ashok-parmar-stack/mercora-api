@@ -25,6 +25,8 @@ const ACTION_LABELS: Record<string, { name: string; desc: string }> = {
   RESET: { name: 'Reset', desc: 'Reset and resynchronize data' },
   UPLOAD: { name: 'Upload', desc: 'Upload files to storage' },
   EXPORT: { name: 'Export', desc: 'Export data reports' },
+  REFUND: { name: 'Refund', desc: 'Initiate gateway payment refunds' },
+  MANAGE_STATUS: { name: 'Manage Status', desc: 'Override or update subscription lifecycle status' },
   MANAGE_PERMISSIONS: { name: 'Manage Permissions', desc: 'Assign or override permissions' },
 };
 
@@ -114,6 +116,30 @@ export const PERMISSION_SEEDS: PermissionSeedSpec[] = [
     name: 'File Storage',
     description: 'Manage uploaded media and assets',
     actions: makeActions(['VIEW', 'UPLOAD', 'DELETE']),
+  },
+  {
+    code: 'SUBSCRIPTION_PLANS',
+    name: 'Subscription Plans',
+    description: 'Create, configure, and activate subscription plans and pricing',
+    actions: makeActions(['VIEW', 'CREATE', 'UPDATE', 'DELETE']),
+  },
+  {
+    code: 'SUBSCRIPTIONS',
+    name: 'Business Subscriptions',
+    description: 'Inspect business subscriptions and manage lifecycle status overrides',
+    actions: makeActions(['VIEW', 'UPDATE', 'MANAGE_STATUS']),
+  },
+  {
+    code: 'PAYMENTS',
+    name: 'Subscription Payments & Refunds',
+    description: 'View payment transactions, export payment reports, and issue Razorpay refunds',
+    actions: makeActions(['VIEW', 'EXPORT', 'REFUND']),
+  },
+  {
+    code: 'INVOICES',
+    name: 'Tax Invoices',
+    description: 'View and export generated GST tax invoices',
+    actions: makeActions(['VIEW', 'EXPORT']),
   },
 ];
 

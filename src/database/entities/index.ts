@@ -28,3 +28,6 @@ export * from '../../catalog-master/mappings/entities/hsn-code-category.entity';
 export * from '../../modules/businesses/infrastructure/persistence/entities/business-orm.entity';
 export * from '../../modules/categories/infrastructure/persistence/entities/category.orm-entity';
 export * from '../../modules/business-categories/infrastructure/persistence/entities/business-category.orm-entity';
+
+// Subscription & Payment Entities
+export * from '../../modules/subscriptions/entities';

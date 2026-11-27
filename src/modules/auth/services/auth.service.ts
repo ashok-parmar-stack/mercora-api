@@ -1,10 +1,10 @@
 import {
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { MercoraLogger } from '../../../common/logger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -28,7 +28,7 @@ import { ResetPasswordDto } from '../dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly logger = new MercoraLogger(AuthService.name);
 
   constructor(
     @InjectRepository(UserEntity)
@@ -331,6 +331,9 @@ export class AuthService {
       where: { id: userId },
       relations: [
         'role',
+        'role.rolePermissions',
+        'role.rolePermissions.permissionAction',
+        'role.rolePermissions.permissionAction.permission',
         'status',
         'company',
         'userPermissions',
@@ -381,6 +384,25 @@ export class AuthService {
           action: up.permissionAction?.code,
           effect: up.effect,
         })),
+        effectivePermissions: (() => {
+          const roleCode = user.role?.code;
+          if (roleCode === 'SUPER_ADMIN') return ['*'];
+          const allowed = new Set<string>();
+          for (const rp of user.role?.rolePermissions || []) {
+            const p = rp.permissionAction?.permission?.code;
+            const a = rp.permissionAction?.code;
+            if (p && a) allowed.add(`${p}.${a}`);
+          }
+          for (const up of user.userPermissions || []) {
+            const p = up.permissionAction?.permission?.code;
+            const a = up.permissionAction?.code;
+            if (!p || !a) continue;
+            const key = `${p}.${a}`;
+            if (up.effect === 'DENY') allowed.delete(key);
+            if (up.effect === 'ALLOW') allowed.add(key);
+          }
+          return Array.from(allowed);
+        })(),
       },
       session: session
         ? {

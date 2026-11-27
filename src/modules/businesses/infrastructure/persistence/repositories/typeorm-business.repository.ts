@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { MercoraLogger } from "../../../../../common/logger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource, SelectQueryBuilder } from "typeorm";
 import {
@@ -33,7 +34,7 @@ type FacetDimension = "category" | "location" | "state" | "city" | "businessType
 
 @Injectable()
 export class TypeOrmBusinessRepository implements IBusinessRepository, OnModuleInit {
-  private readonly logger = new Logger(TypeOrmBusinessRepository.name);
+  private readonly logger = new MercoraLogger(TypeOrmBusinessRepository.name);
   private categoriesCache: CategoryRowForFacet[] | null = null;
   private categoriesCacheExpiresAt = 0;
   private readonly facetsCache = new Map<string, { value: BusinessFacetsResult; expiresAt: number }>();

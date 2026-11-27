@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, ConflictException } from "@nestjs/common";
+import { Injectable, Inject, NotFoundException, ConflictException, Optional } from "@nestjs/common";
 import {
   IBusinessRepository,
   BUSINESS_REPOSITORY_TOKEN,
@@ -7,18 +7,40 @@ import { UpdateBusinessDto } from "./update-business.dto";
 import { BusinessResponseDto } from "../../dto/business-response.dto";
 import { API_MESSAGES } from "../../../../../common/messages";
 import { toSlug } from "../../../../../common/services/slug.util";
+import { SubscriptionEntitlementService } from "../../../../subscriptions/services/subscription-entitlement.service";
 
 @Injectable()
 export class UpdateBusinessUseCase {
   constructor(
     @Inject(BUSINESS_REPOSITORY_TOKEN)
-    private readonly businessRepository: IBusinessRepository
+    private readonly businessRepository: IBusinessRepository,
+    @Optional()
+    private readonly entitlementService?: SubscriptionEntitlementService,
   ) {}
 
-  async execute(id: string, dto: UpdateBusinessDto): Promise<BusinessResponseDto> {
+  async execute(
+    id: string,
+    dto: UpdateBusinessDto,
+    options?: { bypassSubscriptionLimits?: boolean },
+  ): Promise<BusinessResponseDto> {
     const existing = await this.businessRepository.findById(id);
     if (!existing) {
       throw new NotFoundException(API_MESSAGES.businesses.notFound);
+    }
+
+    if (!options?.bypassSubscriptionLimits && this.entitlementService) {
+      const dtoProducts = Array.isArray((dto as any).products)
+        ? (dto as any).products.length
+        : undefined;
+      const dtoContacts = Array.isArray(dto.contacts)
+        ? dto.contacts.filter((c) => c && typeof c.phone === "string" && c.phone.trim().length > 0).length
+        : undefined;
+      if (dtoProducts !== undefined || dtoContacts !== undefined) {
+        await this.entitlementService.assertCanUpdateBusinessProfile(id, {
+          productsCount: dtoProducts,
+          contactsCount: dtoContacts,
+        });
+      }
     }
 
     if (dto.name) existing.name = dto.name;

@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -6,10 +6,11 @@ import { EmailTemplateEntity } from '../../../database/entities/email-template.e
 import { StatusEntity } from '../../../database/entities/status.entity';
 import { EmailContext } from '../interfaces/email.interface';
 import { SYSTEM_EMAIL_TEMPLATES } from '../templates/default-templates';
+import { MercoraLogger } from '../../../common/logger';
 
 @Injectable()
 export class EmailTemplateService implements OnModuleInit {
-  private readonly logger = new Logger(EmailTemplateService.name);
+  private readonly logger = new MercoraLogger(EmailTemplateService.name);
 
   constructor(
     @InjectRepository(EmailTemplateEntity)

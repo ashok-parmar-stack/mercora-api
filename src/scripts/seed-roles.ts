@@ -45,6 +45,10 @@ export const ROLE_SEEDS: RoleSeedSpec[] = [
       'EMAIL_TEMPLATES:VIEW', 'EMAIL_TEMPLATES:CREATE', 'EMAIL_TEMPLATES:UPDATE', 'EMAIL_TEMPLATES:DELETE',
       'AUDIT_LOGS:VIEW', 'AUDIT_LOGS:EXPORT',
       'STORAGE:VIEW', 'STORAGE:UPLOAD', 'STORAGE:DELETE',
+      'SUBSCRIPTION_PLANS:VIEW', 'SUBSCRIPTION_PLANS:CREATE', 'SUBSCRIPTION_PLANS:UPDATE',
+      'SUBSCRIPTIONS:VIEW',
+      'PAYMENTS:VIEW', 'PAYMENTS:EXPORT',
+      'INVOICES:VIEW', 'INVOICES:EXPORT',
     ],
   },
   {
@@ -61,6 +65,7 @@ export const ROLE_SEEDS: RoleSeedSpec[] = [
       'GEOGRAPHY:VIEW', 'GEOGRAPHY:CREATE', 'GEOGRAPHY:UPDATE', 'GEOGRAPHY:DELETE', 'GEOGRAPHY:SYNC',
       'PINCODES:VIEW', 'PINCODES:CREATE', 'PINCODES:UPDATE', 'PINCODES:DELETE', 'PINCODES:SYNC',
       'STORAGE:VIEW', 'STORAGE:UPLOAD',
+      'SUBSCRIPTION_PLANS:VIEW',
     ],
   },
   {
@@ -72,6 +77,7 @@ export const ROLE_SEEDS: RoleSeedSpec[] = [
       'BUSINESSES:VIEW', 'BUSINESSES:CREATE', 'BUSINESSES:UPDATE',
       'CATEGORIES:VIEW', 'BUSINESS_CATEGORIES:VIEW', 'GEOGRAPHY:VIEW', 'PINCODES:VIEW',
       'STORAGE:VIEW', 'STORAGE:UPLOAD',
+      'SUBSCRIPTION_PLANS:VIEW', 'SUBSCRIPTIONS:VIEW',
     ],
   },
   {
@@ -154,19 +160,21 @@ async function bootstrap() {
               .map((key) => actionByKey.get(key))
               .filter((a): a is PermissionActionEntity => Boolean(a));
 
-      for (const act of targetActions) {
-        const exists = await rolePermRepo.findOne({
-          where: { roleId: role.id, permissionActionId: act.id },
-        });
-        if (!exists) {
-          await rolePermRepo.save(
-            rolePermRepo.create({
-              roleId: role.id,
-              permissionActionId: act.id,
-            }),
-          );
-          linkedMappings++;
-        }
+      const existingMappings = await rolePermRepo.find({
+        where: { roleId: role.id },
+      });
+      const existingActionIds = new Set(existingMappings.map((m) => m.permissionActionId));
+      const missingEntities = targetActions
+        .filter((act) => !existingActionIds.has(act.id))
+        .map((act) =>
+          rolePermRepo.create({
+            roleId: role.id,
+            permissionActionId: act.id,
+          }),
+        );
+      if (missingEntities.length > 0) {
+        await rolePermRepo.save(missingEntities);
+        linkedMappings += missingEntities.length;
       }
     }
 

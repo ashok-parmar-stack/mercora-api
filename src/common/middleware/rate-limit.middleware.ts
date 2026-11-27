@@ -24,6 +24,13 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
   { prefix: '/api/auth/resend-verification', limit: 10, windowMs: 60_000 },
   { prefix: '/api/businesses/enquiries', limit: 20, windowMs: 60_000 },
   { prefix: '/api/storage/upload', limit: 30, windowMs: 60_000 },
+  { prefix: '/api/v1/payments/create-order', limit: 15, windowMs: 60_000 },
+  { prefix: '/api/v1/payments/verify', limit: 20, windowMs: 60_000 },
+  { prefix: '/api/v1/subscriptions/checkout', limit: 15, windowMs: 60_000 },
+  { prefix: '/api/v1/subscriptions/renew', limit: 15, windowMs: 60_000 },
+  { prefix: '/api/v1/subscriptions/upgrade', limit: 15, windowMs: 60_000 },
+  { prefix: '/api/v1/subscriptions/downgrade', limit: 15, windowMs: 60_000 },
+  { prefix: '/api/v1/subscriptions/cancel', limit: 15, windowMs: 60_000 },
 ];
 
 const buckets = new Map<string, BucketEntry>();

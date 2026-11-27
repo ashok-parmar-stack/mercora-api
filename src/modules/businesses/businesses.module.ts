@@ -1,7 +1,8 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { BusinessOrmEntity } from "./infrastructure/persistence/entities/business-orm.entity";
 import { BusinessEnquiryEntity } from "../../database/entities/business-enquiry.entity";
+import { SubscriptionsModule } from "../subscriptions/subscriptions.module";
 import { BUSINESS_REPOSITORY_TOKEN } from "./domain/repositories/business.repository.interface";
 import { IBusinessRepositoryToken } from "./domain/interfaces/business-repository.interface";
 import { TypeOrmBusinessRepository } from "./infrastructure/persistence/repositories/typeorm-business.repository";
@@ -20,7 +21,10 @@ import { CustomerBusinessController } from "./presentation/controllers/customer-
 import { AdminBusinessController } from "./presentation/controllers/admin-business.controller";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BusinessOrmEntity, BusinessEnquiryEntity])],
+  imports: [
+    TypeOrmModule.forFeature([BusinessOrmEntity, BusinessEnquiryEntity]),
+    forwardRef(() => SubscriptionsModule),
+  ],
   controllers: [
     PublicBusinessController,
     CustomerBusinessController,

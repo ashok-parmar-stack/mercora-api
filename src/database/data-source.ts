@@ -32,6 +32,19 @@ import {
 import { BusinessOrmEntity } from '../modules/businesses/infrastructure/persistence/entities/business-orm.entity';
 import { CategoryOrmEntity } from '../modules/categories/infrastructure/persistence/entities/category.orm-entity';
 import { BusinessCategoryOrmEntity } from '../modules/business-categories/infrastructure/persistence/entities/business-category.orm-entity';
+import {
+  SubscriptionPlanEntity,
+  PlanFeatureEntity,
+  SubscriptionEntity,
+  PaymentEntity,
+  PaymentAttemptEntity,
+  PaymentWebhookEventEntity,
+  InvoiceEntity,
+  RefundEntity,
+  SubscriptionChangeEntity,
+  SubscriptionAuditLogEntity,
+  PaymentSettingsEntity,
+} from '../modules/subscriptions/entities';
 
 // Helper to manually load environment file
 function loadEnvFile(envFilePath: string) {
@@ -90,6 +103,17 @@ export const allEntities = [
   EmailVerificationEntity,
   PasswordResetEntity,
   BusinessEnquiryEntity,
+  SubscriptionPlanEntity,
+  PlanFeatureEntity,
+  SubscriptionEntity,
+  PaymentEntity,
+  PaymentAttemptEntity,
+  PaymentWebhookEventEntity,
+  InvoiceEntity,
+  RefundEntity,
+  SubscriptionChangeEntity,
+  SubscriptionAuditLogEntity,
+  PaymentSettingsEntity,
 ];
 
 const dbUrl = process.env.DATABASE_URL;
