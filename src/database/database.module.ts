@@ -100,6 +100,12 @@ const allEntities = [
         const sslEnabled = config.get<boolean>('database.ssl');
         const synchronize = Boolean(config.get<boolean>('database.synchronize'));
         const logging = Boolean(config.get<boolean>('database.logging'));
+        const poolMax = config.get<number>('database.poolMax') ?? 15;
+        const idleTimeoutMillis = config.get<number>('database.idleTimeoutMillis') ?? 30000;
+        const connectionTimeoutMillis =
+          config.get<number>('database.connectionTimeoutMillis') ?? 5000;
+        const statementTimeoutMs =
+          config.get<number>('database.statementTimeoutMs') ?? 30000;
 
         if (dbType === 'postgres' || dbUrl) {
           return {
@@ -121,6 +127,12 @@ const allEntities = [
             logging,
             extra: {
               timezone: 'UTC',
+              max: poolMax,
+              idleTimeoutMillis,
+              connectionTimeoutMillis,
+              ...(statementTimeoutMs > 0
+                ? { statement_timeout: statementTimeoutMs }
+                : {}),
             },
           };
         }

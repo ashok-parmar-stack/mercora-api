@@ -41,6 +41,10 @@ export interface AppConfig {
     ssl?: boolean;
     synchronize: boolean;
     logging: boolean;
+    poolMax: number;
+    idleTimeoutMillis: number;
+    connectionTimeoutMillis: number;
+    statementTimeoutMs: number;
   };
   elasticsearch: {
     enabled: boolean;
@@ -107,8 +111,24 @@ export default (): AppConfig => ({
     database: process.env.DB_NAME || process.env.DB_DATABASE || 'mercora_db',
     sqlitePath: process.env.SQLITE_PATH || './mercora.sqlite',
     ssl: process.env.DB_SSL === 'true' || Boolean(process.env.DATABASE_URL?.includes('sslmode=require')),
-    synchronize: process.env.DB_SYNCHRONIZE === 'true',
+    synchronize:
+      process.env.NODE_ENV === 'production'
+        ? false
+        : process.env.DB_SYNCHRONIZE === 'true',
     logging: process.env.DB_LOGGING === 'true',
+    poolMax: Math.max(1, parseInt(process.env.DB_POOL_MAX || '15', 10) || 15),
+    idleTimeoutMillis: Math.max(
+      1000,
+      parseInt(process.env.DB_IDLE_TIMEOUT_MS || '30000', 10) || 30000,
+    ),
+    connectionTimeoutMillis: Math.max(
+      1000,
+      parseInt(process.env.DB_CONNECT_TIMEOUT_MS || '5000', 10) || 5000,
+    ),
+    statementTimeoutMs: Math.max(
+      0,
+      parseInt(process.env.DB_STATEMENT_TIMEOUT_MS || '30000', 10) || 30000,
+    ),
   },
   elasticsearch: {
     enabled: process.env.ELASTICSEARCH_ENABLED === 'true',
